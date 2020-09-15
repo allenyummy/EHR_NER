@@ -7,7 +7,7 @@ import os
 from filelock import FileLock
 from dataclasses import dataclass
 from typing import List, Dict, Optional, TextIO
-from transformers import PreTrainedTokenizer, EvalPrediction
+from transformers import PreTrainedTokenizer
 import torch
 from torch import nn
 from torch.utils.data.dataset import Dataset
