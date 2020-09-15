@@ -23,7 +23,7 @@ from transformers import (
 from torch import nn
 from torch.utils.tensorboard import SummaryWriter
 from configs.args_dataclass import DataTrainingArguments, ModelArguments
-from utils.sl import NerAsSLDataset, get_labels, align_predictions, compute_metrics, write_predictions_to_file
+from utils.sl import NerAsSLDataset, get_labels, write_predictions_to_file
 
 logging.config.fileConfig('configs/logging.conf')
 logger = logging.getLogger(__name__)
