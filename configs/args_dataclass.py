@@ -1,3 +1,7 @@
+# encoding=utf-8
+# Author: Allen.Chiang
+# Description: argsd of sequence labeling
+
 from typing import Optional
 from dataclasses import dataclass, field
 

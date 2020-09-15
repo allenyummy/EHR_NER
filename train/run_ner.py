@@ -1,4 +1,4 @@
-# coding=utf-8
+# encoding=utf-8
 # Author: Allen.Chiang
 # Description: run NER task either as sequence labeling task or as machine reading comprehension
 
