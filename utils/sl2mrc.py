@@ -29,7 +29,6 @@ def init_child():
     global temp_cate
     global start_pos
     global end_pos
-
     text = ""
     temp_cate = ""
     start_pos = 0
@@ -99,6 +98,15 @@ for dataset in ["train.txt", "dev.txt", "test.txt"]:
                 passage += char
                 idx += 1
         
+        if passage != "" and temp_ans:
+            mrc_data["data"].append(
+                    {
+                        "pid": pid,
+                        "passage": passage,
+                        "answers": temp_ans,
+                    }
+            )
+
     with open (os.path.join("data", "mrc", dataset), "w") as fout:
         mrc_data_json = json.dumps(mrc_data, indent=4, ensure_ascii=False)
         fout.write(mrc_data_json)
