@@ -1,0 +1,6 @@
+data/
+.pytest_cache/
+.coverage
+__pycache__/
+runs/
+outputs/
