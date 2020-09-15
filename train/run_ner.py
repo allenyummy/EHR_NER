@@ -174,12 +174,13 @@ def main():
                 metrics = trainer.evaluate(dataset)
                 evaluation_results_file = os.path.join(training_args.output_dir, "evaluation_results.txt")
                 if trainer.is_world_master():
-                    with open(evaluation_results_file, "w") as writer:
+                    with open(evaluation_results_file, "w+") as writer:
                         logger.info(f"Eval results of {dataset.set}")
-                        writer.write(f"Eval results of {dataset.set}")
+                        writer.write(f"Eval results of {dataset.set}\n")
                         for key, value in metrics.items():
                             logger.info("  %s = %s", key, value)
                             writer.write("%s = %s\n" % (key, value))
+                        writer.write("\n")
         
         #--- Predict test set ---#
         if training_args.do_predict:
