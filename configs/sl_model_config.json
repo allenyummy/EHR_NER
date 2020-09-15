@@ -16,6 +16,7 @@
     "seed": 1,
     "do_train": true,
     "do_eval": true,
+    "do_predict": true,
     "evaluate_during_training": true,
     "logging_steps": 100
 }
