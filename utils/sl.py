@@ -4,11 +4,9 @@
 
 import logging
 import os
-import numpy as np
 from filelock import FileLock
 from dataclasses import dataclass
-from typing import List, Dict, Tuple, Optional, TextIO
-from seqeval.metrics import accuracy_score, f1_score, precision_score, recall_score
+from typing import List, Dict, Optional, TextIO
 from transformers import PreTrainedTokenizer, EvalPrediction
 import torch
 from torch import nn
@@ -261,28 +259,3 @@ def get_labels(path: str) -> List[str]:
     if "O" not in labels:
         labels = ["O"] + labels
     return labels
-
-def align_predictions(predictions: np.ndarray, label_ids: np.ndarray, label_map: Dict[int, str]) -> Tuple[List[int], List[int]]:
-        preds = np.argmax(predictions, axis=2)
-
-        batch_size, seq_len = preds.shape
-
-        out_label_list = [[] for _ in range(batch_size)]
-        preds_list = [[] for _ in range(batch_size)]
-
-        for i in range(batch_size):
-            for j in range(seq_len):
-                if label_ids[i, j] != nn.CrossEntropyLoss().ignore_index:
-                    out_label_list[i].append(label_map[label_ids[i][j]])
-                    preds_list[i].append(label_map[preds[i][j]])
-
-        return preds_list, out_label_list
-
-def compute_metrics(p: EvalPrediction, label_map: Dict[int, str]) -> Dict:
-    preds_list, out_label_list = align_predictions(p.predictions, p.label_ids, label_map)
-    return {
-        "accuracy_score": accuracy_score(out_label_list, preds_list),
-        "precision": precision_score(out_label_list, preds_list),
-        "recall": recall_score(out_label_list, preds_list),
-        "f1": f1_score(out_label_list, preds_list),
-    }
