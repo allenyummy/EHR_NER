@@ -6,8 +6,10 @@ import logging
 import logging.config
 import os
 import sys
-from typing import List, Dict
+import numpy as np
+from typing import List, Dict, Tuple
 from dataclasses import dataclass, field
+from seqeval.metrics import accuracy_score, f1_score, precision_score, recall_score
 from transformers import (
     BertConfig,
     BertTokenizer,
@@ -15,7 +17,8 @@ from transformers import (
     HfArgumentParser,
     TrainingArguments,
     Trainer,
-    set_seed
+    set_seed,
+    EvalPrediction
 )
 from torch.utils.tensorboard import SummaryWriter
 from configs.args_dataclass import DataTrainingArguments, ModelArguments
@@ -119,6 +122,32 @@ def main():
             if training_args.do_predict
             else None
         )
+        
+        #--- utils function for sl ---# (label_map is unique for sl task.)
+        def align_predictions(predictions: np.ndarray, label_ids: np.ndarray) -> Tuple[List[int], List[int]]:
+            preds = np.argmax(predictions, axis=2)
+
+            batch_size, seq_len = preds.shape
+
+            out_label_list = [[] for _ in range(batch_size)]
+            preds_list = [[] for _ in range(batch_size)]
+
+            for i in range(batch_size):
+                for j in range(seq_len):
+                    if label_ids[i, j] != nn.CrossEntropyLoss().ignore_index:
+                        out_label_list[i].append(label_map[label_ids[i][j]])
+                        preds_list[i].append(label_map[preds[i][j]])
+
+            return preds_list, out_label_list
+
+        def compute_metrics(p: EvalPrediction) -> Dict:
+            preds_list, out_label_list = align_predictions(p.predictions, p.label_ids)
+            return {
+                "accuracy_score": accuracy_score(out_label_list, preds_list),
+                "precision": precision_score(out_label_list, preds_list),
+                "recall": recall_score(out_label_list, preds_list),
+                "f1": f1_score(out_label_list, preds_list),
+            }
 
         #--- Initialize trainer from huggingface ---#
         trainer = Trainer(
