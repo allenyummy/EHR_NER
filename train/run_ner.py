@@ -183,7 +183,7 @@ def main():
         #--- Predict test set ---#
         if training_args.do_predict:
             predictions, label_ids, metrics = trainer.predict(test_dataset)
-            preds_list, _ = align_predictions(predictions, label_ids, label_map)
+            preds_list, _ = align_predictions(predictions, label_ids)
             test_predictions_file = os.path.join(training_args.output_dir, "test_predictions.txt")
             if trainer.is_world_master():
                 with open(test_predictions_file, "w") as writer:
