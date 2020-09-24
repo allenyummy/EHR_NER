@@ -16,10 +16,12 @@ version = "v1.0_" + time
 
 def init_parent():
     global passage
+    global passage_tokens
     global answers
     global temp_ans
     global idx
     passage = ""
+    passage_tokens = list()
     answers = list()
     temp_ans = list()
     idx = 0
@@ -51,10 +53,24 @@ for dataset in ["train.txt", "dev.txt", "test.txt"]:
         for i, line in tqdm(enumerate(fin)):
             line = line.rstrip()
             if line == "":
+
+                if text != "":
+                    end_pos = idx-1
+                    temp_ans.append(
+                        {
+                            "text": text,
+                            "label": temp_cate,
+                            "start_pos": start_pos,
+                            "end_pos": end_pos
+                        }
+                    )
+                    init_child()
+
                 mrc_data["data"].append(
                     {
                         "pid": pid,
                         "passage": passage,
+                        "passage_tokens": passage_tokens,
                         "answers": temp_ans,
                     }
                 )
@@ -96,6 +112,7 @@ for dataset in ["train.txt", "dev.txt", "test.txt"]:
                     temp_cate = cate
 
                 passage += char
+                passage_tokens.append(char)
                 idx += 1
         
         if passage != "" and temp_ans:
@@ -103,6 +120,7 @@ for dataset in ["train.txt", "dev.txt", "test.txt"]:
                     {
                         "pid": pid,
                         "passage": passage,
+                        "passage_tokens": passage_tokens,
                         "answers": temp_ans,
                     }
             )
