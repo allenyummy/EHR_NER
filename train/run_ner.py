@@ -23,7 +23,12 @@ from transformers import (
 from torch import nn
 from torch.utils.tensorboard import SummaryWriter
 from configs.args_dataclass import DataTrainingArguments, ModelArguments
-from utils.sl import NerAsSLDataset, get_labels, write_predictions_to_file
+from utils.sl import (
+    NerAsSLDataset, 
+    get_labels, 
+    write_predictions_to_file,
+)
+from utils.mrc import NerAsMRCDataset
 
 logging.config.fileConfig('configs/logging.conf')
 logger = logging.getLogger(__name__)
@@ -51,36 +56,38 @@ def main():
     )
     set_seed(training_args.seed)
 
-    if model_args.task == "sl":
+    #--- Prepare labels ---#
+    labels = get_labels(data_args.labels_path)
+    label_map: Dict[int, str] = {i: label for i, label in enumerate(labels)}
+    num_labels = len(labels)
 
-        #--- Prepare labels ---#
-        labels = get_labels(data_args.labels_path)
-        label_map: Dict[int, str] = {i: label for i, label in enumerate(labels)}
-        num_labels = len(labels)
-
-        #--- Prepare config, tokenizer, model ---#
-        config = BertConfig.from_pretrained(
+    #--- Prepare model config and tokenizer ---#
+    config = BertConfig.from_pretrained(
             model_args.config_name if model_args.config_name else model_args.model_name_or_path,
             num_labels=num_labels,
             id2label=label_map,
             label2id={label: i for i, label in enumerate(labels)},
             cache_dir=model_args.cache_dir,
         )
-        tokenizer = BertTokenizer.from_pretrained(
-            model_args.tokenizer_name if model_args.tokenizer_name else model_args.model_name_or_path,
-            cache_dir=model_args.cache_dir,
-            use_fast=model_args.use_fast,
-        )
+    tokenizer = BertTokenizer.from_pretrained(
+        model_args.tokenizer_name if model_args.tokenizer_name else model_args.model_name_or_path,
+        cache_dir=model_args.cache_dir,
+        use_fast=model_args.use_fast,
+    )
+
+    #--- Add tokens that are might not in vocab.txt ---#
+    add_tokens = ['瘜', '皰', '搐', '齲', '蛀', '髕', '闌', '疝', '嚥', '簍', '廔', '顳', '溼', '髖', '膈', '搔', '攣', '仟', '鐙', '蹠', '橈']
+    tokenizer.add_tokens(add_tokens)
+
+    if model_args.task == "sl":
+
+        #--- Prepare model ---#
         model = BertForTokenClassification.from_pretrained(
             model_args.model_name_or_path,
             from_tf=bool(".ckpt" in model_args.model_name_or_path),
             config=config,
             cache_dir=model_args.cache_dir,
         )
-
-        #--- Add tokens that are might not in vocab.txt ---#
-        add_tokens = ['瘜', '皰', '搐', '齲', '蛀', '髕', '闌', '疝', '嚥', '簍', '廔', '顳', '溼', '髖', '膈', '搔', '攣', '仟', '鐙', '蹠', '橈']
-        tokenizer.add_tokens(add_tokens)
         model.resize_token_embeddings(len(tokenizer))
 
         #--- Prepare datasets ---#
@@ -191,6 +198,50 @@ def main():
                 with open(test_predictions_file, "w") as writer:
                     with open(os.path.join(data_args.data_dir, data_args.test_filename), "r") as f:
                         write_predictions_to_file(writer, f, preds_list)
+    
+    elif model_args.task == "mrc":
+
+        #--- Prepare datasets ---#
+        train_dataset = (
+            NerAsMRCDataset(
+                data_dir=data_args.data_dir,
+                filename=data_args.train_filename,
+                tokenizer=tokenizer,
+                labels=labels,
+                model_type=config.model_type,
+                max_seq_length=data_args.max_seq_length,
+                overwrite_cache=data_args.overwrite_cache,
+            )
+            if training_args.do_train or training_args.do_eval
+            else None
+        )
+        eval_dataset = (
+            NerAsMRCDataset(
+                data_dir=data_args.data_dir,
+                filename=data_args.dev_filename,
+                tokenizer=tokenizer,
+                labels=labels,
+                model_type=config.model_type,
+                max_seq_length=data_args.max_seq_length,
+                overwrite_cache=data_args.overwrite_cache,
+            )
+            if training_args.do_train or training_args.do_eval
+            else None
+        )
+        test_dataset = (
+            NerAsMRCDataset(
+                data_dir=data_args.data_dir,
+                filename=data_args.test_filename,
+                tokenizer=tokenizer,
+                labels=labels,
+                model_type=config.model_type,
+                max_seq_length=data_args.max_seq_length,
+                overwrite_cache=data_args.overwrite_cache,
+            )
+            if training_args.do_predict
+            else None
+        )
+        
 
 if __name__ == "__main__":
     main()
