@@ -1,7 +1,6 @@
 {
-    "task": "mrc",
-    "data_dir": "data/mrc/",
-    "labels_path": "data/mrc/labels.txt",
+    "data_dir": "data/sl/",
+    "labels_path": "data/sl/labels.txt",
     "train_filename": "train.txt",
     "dev_filename": "dev.txt",
     "test_filename": "test.txt",
