@@ -1,1 +1,0 @@
-PYTHONPATH=./ python train/run_ner.py configs/mrc_model_config.json
