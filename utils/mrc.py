@@ -31,15 +31,11 @@ class InputExample:
 
 @dataclass
 class InputFeatures:
-    unique_id: str
-    tokens: List[str]
     input_ids: List[int]
     attention_mask: List[int]
     token_type_ids: List[int]
-    start_pos: Optional[List[int]]
-    end_pos: Optional[List[int]]
-    ner_category: Optional[str]
-    is_impossible: Optional[bool]
+    start_positions: Optional[List[int]]
+    end_positions: Optional[List[int]]
 
 
 class NerAsMRCDataset(Dataset):
@@ -172,13 +168,13 @@ def convert_examples_to_features(
     features = []
     for (ex_index, example) in enumerate(examples):
 
-        #--- init input of feature ---#
+        #--- init ---#
         tokens = []
         input_ids = []
         attention_mask = []
         token_type_ids = []
-        start_pos = []
-        end_pos = []
+        start_positions = []
+        end_positions = []
 
         #--- process passage, start_pos, end_pos ---#
         passage_tokens = example.passage_tokens
@@ -248,38 +244,38 @@ def convert_examples_to_features(
         #--- add query first ---#
         tokens.extend(query_tokens)
         token_type_ids.extend([sequence_a_segment_id]*len(query_tokens))
-        start_pos.extend([0]*len(query_tokens))
-        end_pos.extend([0]*len(query_tokens))
+        start_positions.extend([0]*len(query_tokens))
+        end_positions.extend([0]*len(query_tokens))
         
         #--- add [SEP] token ---#
         tokens.append("[SEP]")
         token_type_ids.append(sequence_a_segment_id)
-        start_pos.append(0)
-        end_pos.append(0)
+        start_positions.append(0)
+        end_positions.append(0)
 
         #--- add passage then ---#
         tokens.extend(all_doc_tokens)
         token_type_ids.extend([sequence_b_segment_id]*len(all_doc_tokens))
-        start_pos.extend(doc_start_pos)
-        end_pos.extend(doc_end_pos)
+        start_positions.extend(doc_start_pos)
+        end_positions.extend(doc_end_pos)
 
         #--- add [SEP] tokens again ---#
         tokens.append("[SEP]")
         token_type_ids.append(sequence_b_segment_id)
-        start_pos.append(0)
-        end_pos.append(0)
+        start_positions.append(0)
+        end_positions.append(0)
 
         #--- add [CLS] tokens ---#
         if cls_token_at_end:
             tokens += [cls_token]
             token_type_ids += [cls_token_segment_id]
-            start_pos += [0]
-            end_pos += [0]
+            start_positions += [0]
+            end_positions += [0]
         else:
             tokens = [cls_token] + tokens
             token_type_ids = [cls_token_segment_id] + token_type_ids
-            start_pos = [0] + start_pos
-            end_pos = [0] + end_pos
+            start_positions = [0] + start_positions
+            end_positions = [0] + end_positions
         
         #--- transform to input ids ---#
         input_ids = tokenizer.convert_tokens_to_ids(tokens)
@@ -294,20 +290,20 @@ def convert_examples_to_features(
                 input_ids = ([pad_token] * padding_length) + input_ids
                 attention_mask = ([0 if mask_padding_with_zero else 1] * padding_length) + attention_mask
                 token_type_ids = ([pad_token_segment_id] * padding_length) + token_type_ids
-                start_pos = ([0] * padding_length) + start_pos
-                end_pos = ([0] * padding_length) + end_pos
+                start_positions = ([0] * padding_length) + start_positions
+                end_positions = ([0] * padding_length) + end_positions
             else:
                 input_ids += [pad_token] * padding_length
                 attention_mask += [0 if mask_padding_with_zero else 1] * padding_length
                 token_type_ids += [pad_token_segment_id] * padding_length
-                start_pos += [0] * padding_length
-                end_pos += [0] * padding_length
+                start_positions += [0] * padding_length
+                end_positions += [0] * padding_length
 
         assert len(input_ids) == max_seq_length
         assert len(attention_mask) == max_seq_length
         assert len(token_type_ids) == max_seq_length
-        assert len(start_pos) == max_seq_length
-        assert len(end_pos) == max_seq_length
+        assert len(start_positions) == max_seq_length
+        assert len(end_positions) == max_seq_length
 
         if ex_index < 5:
             logger.info("*** Example ***")
@@ -316,23 +312,19 @@ def convert_examples_to_features(
             logger.info("input_ids: %s", " ".join([str(x) for x in input_ids]))
             logger.info("input_mask: %s", " ".join([str(x) for x in attention_mask]))
             logger.info("segment_ids: %s", " ".join([str(x) for x in token_type_ids]))
-            logger.info("start_pos: %s", " ".join([str(x) for x in start_pos]))
-            logger.info("end_pos: %s", " ".join([str(x) for x in end_pos]))
-            logger.info("ner_category: %s", example.ner_category)
+            logger.info("start_positions: %s", " ".join([str(x) for x in start_positions]))
+            logger.info("end_positions: %s", " ".join([str(x) for x in end_positions]))
+            logger.info("ner_category: %s (%d)", example.ner_category, label_map[example.ner_category])
             logger.info("is_impossible: %s", example.is_impossible)
             
 
         features.append(
             InputFeatures(
-                unique_id = example.qas_id,
-                tokens = tokens,
                 input_ids = input_ids,
                 attention_mask = attention_mask,
                 token_type_ids = token_type_ids,
-                start_pos = start_pos,
-                end_pos = end_pos,
-                ner_category = label_map[example.ner_category],
-                is_impossible = example.is_impossible
+                start_positions = start_positions,
+                end_positions = end_positions,
             )
         )
     return features
