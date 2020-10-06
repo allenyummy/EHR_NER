@@ -30,6 +30,7 @@ from utils.sl import (
     write_predictions_to_file,
 )
 from utils.mrc import NerAsMRCDataset
+from models.bert_mrc import BertMRCModel
 
 logging.config.fileConfig('configs/logging.conf')
 logger = logging.getLogger(__name__)
@@ -223,7 +224,7 @@ def main():
     elif sys.argv[1] == "mrc":
 
         #--- Prepare model ---#
-        model = BertForQuestionAnswering.from_pretrained(
+        model = BertMRCModel.from_pretrained(
             model_args.model_name_or_path,
             from_tf=bool(".ckpt" in model_args.model_name_or_path),
             config=config,
@@ -239,7 +240,33 @@ def main():
                 tokenizer=tokenizer,
                 labels=labels,
                 model_type=config.model_type,
-                max_seq_length=data_args.max_seq_length,
+                max_seq_length=task_args.max_seq_length,
+                overwrite_cache=data_args.overwrite_cache,
+            )
+            if training_args.do_train or training_args.do_eval
+            else None
+        )
+        eval_dataset = (
+            NerAsMRCDataset(
+                data_dir=data_args.data_dir,
+                filename=data_args.dev_filename,
+                tokenizer=tokenizer,
+                labels=labels,
+                model_type=config.model_type,
+                max_seq_length=task_args.max_seq_length,
+                overwrite_cache=data_args.overwrite_cache,
+            )
+            if training_args.do_train or training_args.do_eval
+            else None
+        )
+        test_dataset = (
+            NerAsMRCDataset(
+                data_dir=data_args.data_dir,
+                filename=data_args.test_filename,
+                tokenizer=tokenizer,
+                labels=labels,
+                model_type=config.model_type,
+                max_seq_length=task_args.max_seq_length,
                 overwrite_cache=data_args.overwrite_cache,
             )
             if training_args.do_train or training_args.do_eval
@@ -247,19 +274,19 @@ def main():
         )
 
         #--- Initialize trainer from huggingface ---#
-        # trainer = Trainer(
-        #     model=model,
-        #     args=training_args,
-        #     train_dataset=train_dataset,
-        #     eval_dataset=None
-        # )
+        trainer = Trainer(
+            model=model,
+            args=training_args,
+            train_dataset=train_dataset,
+            eval_dataset=eval_dataset
+        )
 
-        # #--- Train ---#
-        # if training_args.do_train:
-        #     trainer.train()
-        #     trainer.save_model()
-        #     if trainer.is_world_master():
-        #         tokenizer.save_pretrained(training_args.output_dir)
+        #--- Train ---#
+        if training_args.do_train:
+            trainer.train()
+            trainer.save_model()
+            if trainer.is_world_master():
+                tokenizer.save_pretrained(training_args.output_dir)
 
 
 if __name__ == "__main__":
