@@ -9,12 +9,15 @@ import sys
 import numpy as np
 from typing import List, Dict, Tuple
 from dataclasses import dataclass, field
-from seqeval.metrics import accuracy_score, f1_score, precision_score, recall_score
+from seqeval.metrics import (
+    accuracy_score, 
+    f1_score, 
+    precision_score, 
+    recall_score
+)
 from transformers import (
     BertConfig,
     BertTokenizer,
-    BertForTokenClassification,
-    BertForQuestionAnswering,
     HfArgumentParser,
     TrainingArguments,
     Trainer,
@@ -23,13 +26,19 @@ from transformers import (
 )
 from torch import nn
 from torch.utils.tensorboard import SummaryWriter
-from configs.args_dataclass import DataArguments, SLDataArguments, MRCDataArguments, ModelArguments
+from configs.args_dataclass import (
+    DataArguments, 
+    SLDataArguments, 
+    MRCDataArguments, 
+    ModelArguments
+)
 from utils.sl import (
     NerAsSLDataset,
     get_labels,
     write_predictions_to_file,
 )
 from utils.mrc import NerAsMRCDataset
+from models.bert_sl import BertSLModel
 from models.bert_mrc import BertMRCModel
 
 logging.config.fileConfig('configs/logging.conf')
@@ -101,7 +110,7 @@ def main():
     if sys.argv[1] == "sl":
 
         #--- Prepare model ---#
-        model = BertForTokenClassification.from_pretrained(
+        model = BertSLModel.from_pretrained(
             model_args.model_name_or_path,
             from_tf=bool(".ckpt" in model_args.model_name_or_path),
             config=config,
