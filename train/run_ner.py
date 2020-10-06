@@ -9,12 +9,6 @@ import sys
 import numpy as np
 from typing import List, Dict, Tuple
 from dataclasses import dataclass, field
-from seqeval.metrics import (
-    accuracy_score, 
-    f1_score, 
-    precision_score, 
-    recall_score
-)
 from transformers import (
     BertConfig,
     BertTokenizer,
@@ -25,7 +19,7 @@ from transformers import (
     EvalPrediction
 )
 from torch import nn
-from torch.utils.tensorboard import SummaryWriter
+# from torch.utils.tensorboard import SummaryWriter
 from configs.args_dataclass import (
     DataArguments, 
     SLDataArguments, 
@@ -36,6 +30,12 @@ from utils.sl import (
     NerAsSLDataset,
     get_labels,
     write_predictions_to_file,
+)
+from utils.metrics_sl import (
+    accuracy_score, 
+    f1_score, 
+    precision_score, 
+    recall_score
 )
 from utils.mrc import NerAsMRCDataset
 from models.bert_sl import BertSLModel
@@ -193,7 +193,7 @@ def main():
             train_dataset=train_dataset,
             eval_dataset=eval_dataset,
             compute_metrics=compute_metrics,
-            tb_writer=SummaryWriter(training_args.logging_dir),
+            # tb_writer=SummaryWriter(training_args.logging_dir),
             # optimizers
         )
 
