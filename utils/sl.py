@@ -92,7 +92,7 @@ class NerAsSLDataset(Dataset):
 def read_examples_from_file(file_path: str) -> List[InputExample]:
     guid_index = 1
     examples = []
-    with open(file_path, encoding="utf-8") as f:
+    with open(file_path, "r", encoding="utf-8") as f:
         words = []
         labels = []
         for line in f:
