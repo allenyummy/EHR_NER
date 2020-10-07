@@ -31,7 +31,8 @@ class BertSLModel(BertPreTrainedModel):
         outputs = self.bert(
             input_ids=input_ids,
             attention_mask=attention_mask,
-            token_type_ids=token_type_ids
+            token_type_ids=token_type_ids,
+            return_dict=True
         )
 
         sequence_output = outputs[0]
