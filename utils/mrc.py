@@ -94,7 +94,7 @@ class NerAsMRCDataset(Dataset):
         return self.features[i]    
 
 def read_examples_from_file(file_path: str) -> List[InputExample]:
-    with open(file_path, "r") as f:
+    with open(file_path, "r", encoding="utf-8") as f:
         mrc_data = json.load(f)
     version = mrc_data["version"]
     query = mrc_data["query"]
