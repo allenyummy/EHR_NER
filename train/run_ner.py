@@ -48,6 +48,7 @@ logger = logging.getLogger(__name__)
 def main():
 
     #--- Parse args ---#
+    logger.info("======= Parse args =======")
     if len(sys.argv) != 2:
         raise ValueError(
             "Please enter the command: PYTHONPATH=./ python train/run_ner.py [sl or mrc]")
@@ -84,18 +85,22 @@ def main():
     set_seed(training_args.seed)
 
     #--- Prepare labels ---#
+    logger.info("======= Prepare labels =======")
     labels = get_labels(data_args.labels_path)
     label_map: Dict[int, str] = {i: label for i, label in enumerate(labels)}
     num_labels = len(labels)
 
     #--- Prepare model config and tokenizer ---#
+    logger.info("======= Prepare model config and tokenizer =======")
     config = BertConfig.from_pretrained(
         model_args.config_name if model_args.config_name else model_args.model_name_or_path,
         num_labels=num_labels,
         id2label=label_map,
         label2id={label: i for i, label in enumerate(labels)},
         cache_dir=model_args.cache_dir,
+        return_dict=model_args.return_dict,
     )
+    logger.debug(f"config: {config}")
     tokenizer = BertTokenizer.from_pretrained(
         model_args.tokenizer_name if model_args.tokenizer_name else model_args.model_name_or_path,
         cache_dir=model_args.cache_dir,
@@ -103,6 +108,7 @@ def main():
     )
 
     #--- Add tokens that are might not in vocab.txt ---#
+    logger.info("======= Add tokens that are might not in vocab.txt =======")
     add_tokens = ['瘜', '皰', '搐', '齲', '蛀', '髕', '闌', '疝', '嚥',
                   '簍', '廔', '顳', '溼', '髖', '膈', '搔', '攣', '仟', '鐙', '蹠', '橈']
     tokenizer.add_tokens(add_tokens)
