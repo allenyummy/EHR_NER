@@ -16,6 +16,7 @@ class BertSLModel(BertPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
         self.num_labels = config.num_labels
+        self.return_dict = config.return_dict
         self.bert = BertModel(config, add_pooling_layer=False)
         self.dropout = Dropout(config.hidden_dropout_prob)
         self.classifier = Linear(config.hidden_size, config.num_labels)
@@ -26,13 +27,14 @@ class BertSLModel(BertPreTrainedModel):
         input_ids=None,
         token_type_ids=None,
         attention_mask=None,
-        labels=None
+        labels=None,
+        return_dict=None,
     ):
         outputs = self.bert(
             input_ids=input_ids,
             attention_mask=attention_mask,
             token_type_ids=token_type_ids,
-            return_dict=True
+            return_dict=self.return_dict
         )
 
         sequence_output = outputs[0]
@@ -53,9 +55,13 @@ class BertSLModel(BertPreTrainedModel):
             else:
                 loss = loss_fct(logits.view(-1, self.num_labels), labels.view(-1))
 
-        return TokenClassificationModelOutput(
-            loss=loss,
-            logits=logits,
-            hidden_states=outputs.hidden_states,
-            attentions=outputs.attentions,
-        )
+        if self.return_dict:
+            return TokenClassificationModelOutput(
+                loss=loss,
+                logits=logits,
+                hidden_states=outputs.hidden_states,
+                attentions=outputs.attentions,
+            )
+        else:
+            output = (loss,) + outputs[2:]
+            return ((loss,) + output) if loss is not None else output
