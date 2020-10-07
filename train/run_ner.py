@@ -211,9 +211,9 @@ def main():
                 evaluation_results_file = os.path.join(
                     training_args.output_dir, "evaluation_results.txt")
                 if trainer.is_world_master():
-                    with open(evaluation_results_file, "w+") as writer:
-                        logger.info(f"Eval results of {dataset.set}")
-                        writer.write(f"Eval results of {dataset.set}\n")
+                    with open(evaluation_results_file, "a") as writer:
+                        logger.info(f"Eval results of {dataset.set} set")
+                        writer.write(f"Eval results of {dataset.set} set\n")
                         for key, value in metrics.items():
                             logger.info("  %s = %s", key, value)
                             writer.write("%s = %s\n" % (key, value))
@@ -226,8 +226,8 @@ def main():
             test_predictions_file = os.path.join(
                 training_args.output_dir, "test_predictions.txt")
             if trainer.is_world_master():
-                with open(test_predictions_file, "w") as writer:
-                    with open(os.path.join(data_args.data_dir, data_args.test_filename), "r") as f:
+                with open(test_predictions_file, "w", encoding="utf-8") as writer:
+                    with open(os.path.join(data_args.data_dir, data_args.test_filename), "r", encoding="utf-8") as f:
                         write_predictions_to_file(writer, f, preds_list)
 
     elif sys.argv[1] == "mrc":
