@@ -125,8 +125,9 @@ class ModelArguments:
             "help": "Where do you want to store the pretrained models downloaded from s3"}
     )
     return_dict: bool = field(
-        default=True,
+        default=False,
         metadata={
             "help": "Whether or not the model should return a :class: `~transformers.file_utils.ModelOutput` instead of a plain tuple."
+                    "It does not show in the BertConfig when it is False."
         }
     )

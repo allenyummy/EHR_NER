@@ -14,7 +14,7 @@ class BertMRCModel(BertPreTrainedModel):
 
     def __init__(self, config):
         super().__init__(config)
-        self.return_dict = config.return_dict
+        self.return_dict = config.return_dict if hasattr(config, "return_dict") else False
         self.bert = BertModel(config, add_pooling_layer=False)
         self.start_outputs = Linear(config.hidden_size, 2)
         self.end_outoputs = Linear(config.hidden_size, 2)
