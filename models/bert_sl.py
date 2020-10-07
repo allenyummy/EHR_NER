@@ -63,5 +63,5 @@ class BertSLModel(BertPreTrainedModel):
                 attentions=outputs.attentions,
             )
         else:
-            output = (loss,) + outputs[2:]
+            output = (logits,) + outputs[2:]
             return ((loss,) + output) if loss is not None else output
