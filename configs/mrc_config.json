@@ -10,6 +10,7 @@
     "max_answer_length": 30,
     "version_2_with_negative": true,
     "overwrite_cache": false,
+    "return_dict": true,
     "model_name_or_path": "hfl/chinese-bert-wwm",
     "output_dir": "outputs/",
     "num_train_epochs": 20,
