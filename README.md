@@ -27,7 +27,7 @@ $ docker run --name ${container_name} -t -i --rm -v ${home}/EHR_NER/:/workspace 
 ## Citation
 ```
 @article{Comimg soon,
-  author={Yu-Lun Chiang},
+  author={Yu-Lun Chiang, Giles ChaoGG},
   mail={chiangyulun0914@gmail.com}
 }
 ```
