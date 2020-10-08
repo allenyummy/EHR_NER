@@ -11,12 +11,14 @@ filelock==3.0.12
 flask==1.1.2
 future==0.18.2
 gunicorn==20.0.4
+h5py==2.10.0
 idna==2.10
 importlib-metadata==2.0.0; python_version < "3.8"
 itsdangerous==1.1.0
 jdcal==1.4.1
 jinja2==2.11.2
 joblib==0.17.0
+keras==2.4.3
 markupsafe==1.1.1
 more-itertools==8.5.0
 numpy==1.19.2
@@ -32,15 +34,18 @@ pytest-mock==3.3.1
 pytest==5.4.3
 python-dateutil==2.8.1
 pytz==2020.1
+pyyaml==5.3.1
 regex==2020.9.27
 requests==2.24.0
 sacremoses==0.0.43
+scipy==1.5.2
 sentencepiece==0.1.91
+seqeval==0.0.19
 six==1.15.0
 tokenizers==0.8.1rc2
 toml==0.10.1
-torch==1.5.1
-tqdm==4.50.0
+torch==1.6.0
+tqdm==4.50.1
 transformers==3.3.1
 urllib3==1.25.10
 wcwidth==0.2.5

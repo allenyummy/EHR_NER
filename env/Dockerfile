@@ -6,9 +6,9 @@ LABEL maintainer="Yu-Lun Chiang" \
 
 ENV PYTHONIOENCODING UTF-8
 
-# install python 3.6 and pip
+# install python 3.6 and 3.7 and pip
 RUN apt-get update \
-    && apt-get install -y python3-dev \
+    && apt-get install -y python3.7-dev \
     && apt-get install -y python3-pip \
     && cd /usr/local/bin \
     && ln -s /usr/bin/python3 python \
