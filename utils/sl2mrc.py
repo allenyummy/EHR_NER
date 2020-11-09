@@ -36,7 +36,7 @@ def init_child():
     start_pos = 0
     end_pos = 0
 
-with open (os.path.join("configs", "mrc_query.json"), "r") as f: 
+with open (os.path.join("configs", "qasl_query.json"), "r") as f: 
     mrc_query = json.load(f)
 
 for dataset in ["train.txt", "dev.txt", "test.txt"]:
@@ -125,6 +125,6 @@ for dataset in ["train.txt", "dev.txt", "test.txt"]:
                     }
             )
 
-    with open (os.path.join("data", "mrc", dataset), "w") as fout:
+    with open (os.path.join("data", "qasl", dataset), "w") as fout:
         mrc_data_json = json.dumps(mrc_data, indent=4, ensure_ascii=False)
         fout.write(mrc_data_json)

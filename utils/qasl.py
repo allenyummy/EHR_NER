@@ -48,13 +48,14 @@ class NerAsQASLDataset(Dataset):
         labels: List[str],
         model_type: str,
         max_seq_length: Optional[int]=None,
+        use_simplified=False,
         overwrite_cache=False
         ):
         self.set = filename.split(".")[0]
 
         # Load data features from cache or dataset file
         cached_features_file = os.path.join(
-            data_dir, "cached_{}_{}_{}".format(self.set, tokenizer.__class__.__name__, str(max_seq_length)))
+            data_dir, "cached_{}_{}_{}_{}".format(self.set, tokenizer.__class__.__name__, str(max_seq_length), f"simplified_{use_simplified}"))
 
         # Make sure only the first process in distributed training processes the dataset,
         # and the others will use the cache.
@@ -66,7 +67,7 @@ class NerAsQASLDataset(Dataset):
             else:
                 file_path = os.path.join(data_dir, filename)
                 logger.info(f"Creating features from dataset file at {file_path}")
-                examples = read_examples_from_file(file_path)
+                examples = read_examples_from_file(file_path, use_simplified)
                 # TODO clean up all this to leverage built-in features of tokenizers
                 self.features = convert_examples_to_features(
                     examples,
@@ -92,7 +93,7 @@ class NerAsQASLDataset(Dataset):
     def __getitem__(self, i) -> InputFeatures:
         return self.features[i]
 
-def read_examples_from_file(file_path: str) -> List[InputExample]:
+def read_examples_from_file(file_path: str, use_simplified: bool) -> List[InputExample]:
     with open(file_path, "r", encoding="utf-8") as f:
         mrc_data = json.load(f)
     version = mrc_data["version"]
@@ -119,14 +120,18 @@ def read_examples_from_file(file_path: str) -> List[InputExample]:
             )
             
             for ans in eachData["answers"]:
-                ans_text = ans["text"]
+                # ans_text = ans["text"]
                 label = ans["label"]
                 start_pos = ans["start_pos"]
                 end_pos = ans["end_pos"]
 
-                if ner_cate in label:
-                    example.labels[start_pos] = "B-"+label
-                    example.labels[start_pos+1:end_pos+1] = ["I-"+label] * (end_pos-start_pos)
+                if ner_cate == label:
+                    if use_simplified:
+                        example.labels[start_pos] = "B"
+                        example.labels[start_pos+1:end_pos+1] = ["I"] * (end_pos-start_pos)
+                    else:
+                        example.labels[start_pos] = "B-"+label
+                        example.labels[start_pos+1:end_pos+1] = ["I-"+label] * (end_pos-start_pos)
 
             examples.append(example)
     return examples
@@ -292,7 +297,7 @@ if __name__ == '__main__':
     labels = get_labels(label_path)
     tokenizer = BertTokenizer.from_pretrained("hfl/chinese-bert-wwm")
 
-    examples = read_examples_from_file(file_path)
+    examples = read_examples_from_file(file_path, use_simplified=False)
     features = convert_examples_to_features(
             examples,
             labels,

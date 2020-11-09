@@ -22,7 +22,8 @@ from torch import nn
 # from torch.utils.tensorboard import SummaryWriter
 from configs.args_dataclass import (
     DataArguments, 
-    SLDataArguments, 
+    SLDataArguments,
+    QASLDataArguments,
     MRCDataArguments, 
     ModelArguments
 )
@@ -59,13 +60,17 @@ def main():
         parser = HfArgumentParser(
             (DataArguments, SLDataArguments, ModelArguments, TrainingArguments))
 
-    elif sys.argv[1] in ["mrc", "qasl"]:
+    elif sys.argv[1] == "qasl":
+        parser = HfArgumentParser(
+            (DataArguments, QASLDataArguments, ModelArguments, TrainingArguments))
+
+    elif sys.argv[1] == "mrc":
         parser = HfArgumentParser(
             (DataArguments, MRCDataArguments, ModelArguments, TrainingArguments))
     
     else:
         raise ValueError(
-            "The second argv of sys must be either sl (sequence labeling) or mrc (machine reading comprehension).")
+            "The second argv of sys must be sl (sequence labeling), qasl (QA sequence labeling), or mrc (machine reading comprehension).")
     
     data_args, task_args, model_args, training_args = parser.parse_json_file(  # pylint: disable=unbalanced-tuple-unpacking
         json_file=config_json_file)
@@ -257,6 +262,7 @@ def main():
                 labels=labels,
                 model_type=config.model_type,
                 max_seq_length=task_args.max_seq_length,
+                use_simplified=task_args.use_simplified,
                 overwrite_cache=data_args.overwrite_cache,
             )
             if training_args.do_train or training_args.do_eval
@@ -270,6 +276,7 @@ def main():
                 labels=labels,
                 model_type=config.model_type,
                 max_seq_length=task_args.max_seq_length,
+                use_simplified=task_args.use_simplified,
                 overwrite_cache=data_args.overwrite_cache,
             )
             if training_args.do_train or training_args.do_eval
@@ -283,6 +290,7 @@ def main():
                 labels=labels,
                 model_type=config.model_type,
                 max_seq_length=task_args.max_seq_length,
+                use_simplified=task_args.use_simplified,
                 overwrite_cache=data_args.overwrite_cache,
             )
             if training_args.do_predict

@@ -46,6 +46,24 @@ class SLDataArguments:
         }
     )
 
+@dataclass
+class QASLDataArguments:
+    max_seq_length: int = field(
+        default=128,
+        metadata={
+            "help": "The maximum total input sequence length after tokenization. Sequences longer "
+            "than this will be truncated, sequences shorter will be padded."
+        }
+    )
+    use_simplified: bool = field(
+        default=False,
+        metadata={
+            "help": "Whether to use simplified QA Sequence Labeling."
+            "Default: False"
+            "If True, just BIO will be used."
+            "If False, B-label, I-label, O will be used."
+        }
+    )
 
 @dataclass
 class MRCDataArguments:
