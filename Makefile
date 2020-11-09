@@ -6,5 +6,7 @@ build:
 	docker build . -t ehr_ner:0.1.0
 run_sl:
 	PYTHONPATH=./ python train/run_ner.py sl
+run_qasl:
+	PYTHONPATH=./ python train/run_ner.py qasl
 run_mrc:
 	PYTHONPATH=./ python train/run_ner.py mrc

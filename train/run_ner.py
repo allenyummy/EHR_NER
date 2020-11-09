@@ -37,6 +37,7 @@ from utils.metrics_sl import (
     precision_score, 
     recall_score
 )
+from utils.qasl import NerAsQASLDataset
 from utils.mrc import NerAsMRCDataset
 from models.bert_sl import BertSLModel
 from models.bert_mrc import BertMRCModel
@@ -58,7 +59,7 @@ def main():
         parser = HfArgumentParser(
             (DataArguments, SLDataArguments, ModelArguments, TrainingArguments))
 
-    elif sys.argv[1] == "mrc":
+    elif sys.argv[1] in ["mrc", "qasl"]:
         parser = HfArgumentParser(
             (DataArguments, MRCDataArguments, ModelArguments, TrainingArguments))
     
@@ -235,6 +236,118 @@ def main():
                 with open(test_predictions_file, "w", encoding="utf-8") as writer:
                     with open(os.path.join(data_args.data_dir, data_args.test_filename), "r", encoding="utf-8") as f:
                         write_predictions_to_file(writer, f, preds_list)
+    
+    elif sys.argv[1] == "qasl":
+
+        #--- Prepare model ---#
+        model = BertSLModel.from_pretrained(
+            model_args.model_name_or_path,
+            from_tf=bool(".ckpt" in model_args.model_name_or_path),
+            config=config,
+            cache_dir=model_args.cache_dir,
+        )
+        model.resize_token_embeddings(len(tokenizer))
+
+        #--- Prepare datasets ---#
+        train_dataset = (
+            NerAsQASLDataset(
+                data_dir=data_args.data_dir,
+                filename=data_args.train_filename,
+                tokenizer=tokenizer,
+                labels=labels,
+                model_type=config.model_type,
+                max_seq_length=task_args.max_seq_length,
+                overwrite_cache=data_args.overwrite_cache,
+            )
+            if training_args.do_train or training_args.do_eval
+            else None
+        )
+        eval_dataset = (
+            NerAsQASLDataset(
+                data_dir=data_args.data_dir,
+                filename=data_args.dev_filename,
+                tokenizer=tokenizer,
+                labels=labels,
+                model_type=config.model_type,
+                max_seq_length=task_args.max_seq_length,
+                overwrite_cache=data_args.overwrite_cache,
+            )
+            if training_args.do_train or training_args.do_eval
+            else None
+        )
+        test_dataset = (
+            NerAsQASLDataset(
+                data_dir=data_args.data_dir,
+                filename=data_args.test_filename,
+                tokenizer=tokenizer,
+                labels=labels,
+                model_type=config.model_type,
+                max_seq_length=task_args.max_seq_length,
+                overwrite_cache=data_args.overwrite_cache,
+            )
+            if training_args.do_predict
+            else None
+        )
+
+        # --- utils function for sl ---# (label_map is unique for sl task.)
+        def align_predictions(predictions: np.ndarray, label_ids: np.ndarray) -> Tuple[List[int], List[int]]:
+            preds = np.argmax(predictions, axis=2)
+
+            batch_size, seq_len = preds.shape
+
+            out_label_list = [[] for _ in range(batch_size)]
+            preds_list = [[] for _ in range(batch_size)]
+
+            for i in range(batch_size):
+                for j in range(seq_len):
+                    if label_ids[i, j] != nn.CrossEntropyLoss().ignore_index:
+                        out_label_list[i].append(label_map[label_ids[i][j]])
+                        preds_list[i].append(label_map[preds[i][j]])
+
+            return preds_list, out_label_list
+
+        def compute_metrics(p: EvalPrediction) -> Dict:
+            preds_list, out_label_list = align_predictions(
+                p.predictions, p.label_ids)
+            return {
+                "accuracy_score": accuracy_score(out_label_list, preds_list),
+                "precision": precision_score(out_label_list, preds_list),
+                "recall": recall_score(out_label_list, preds_list),
+                "f1": f1_score(out_label_list, preds_list),
+            }
+
+        #--- Initialize trainer from huggingface ---#
+        trainer = Trainer(
+            model=model,
+            args=training_args,
+            train_dataset=train_dataset,
+            eval_dataset=eval_dataset,
+            compute_metrics=compute_metrics,
+            # tb_writer=SummaryWriter(training_args.logging_dir),
+            # optimizers
+        )
+
+        #--- Train ---#
+        if training_args.do_train:
+            trainer.train()
+            trainer.save_model()
+            if trainer.is_world_master():
+                tokenizer.save_pretrained(training_args.output_dir)
+
+        #--- Evaluate all set ---#
+        if training_args.do_eval:
+            for dataset in [train_dataset, eval_dataset, test_dataset]:
+                metrics = trainer.evaluate(dataset)
+                evaluation_results_file = os.path.join(
+                    training_args.output_dir, "evaluation_results.txt")
+                if trainer.is_world_master():
+                    with open(evaluation_results_file, "a") as writer:
+                        logger.info(f"Eval results of {dataset.set} set")
+                        writer.write(f"Eval results of {dataset.set} set\n")
+                        for key, value in metrics.items():
+                            logger.info("  %s = %s", key, value)
+                            writer.write("%s = %s\n" % (key, value))
+                        writer.write("\n")
 
     elif sys.argv[1] == "mrc":
 
@@ -284,7 +397,7 @@ def main():
                 max_seq_length=task_args.max_seq_length,
                 overwrite_cache=data_args.overwrite_cache,
             )
-            if training_args.do_train or training_args.do_eval
+            if training_args.do_predict
             else None
         )
 
@@ -302,6 +415,11 @@ def main():
             trainer.save_model()
             if trainer.is_world_master():
                 tokenizer.save_pretrained(training_args.output_dir)
+
+        #--- Predict test set ---#
+        if training_args.do_predict:
+            predictions = trainer.predict(test_dataset)
+            logger.info(f"preditcions: {predictions}")
 
 
 if __name__ == "__main__":
