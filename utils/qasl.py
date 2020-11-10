@@ -195,7 +195,7 @@ def convert_examples_to_features(
         #--- add query first ---#
         tokens.extend(query_tokens)
         token_type_ids.extend([sequence_a_segment_id]*len(query_tokens))
-        label_ids.extend([label_map["O"]]*len(query_tokens))
+        label_ids.extend([pad_token_label_id]*len(query_tokens))
 
         #--- add [SEP] token ---#
         tokens.append("[SEP]")
@@ -235,12 +235,12 @@ def convert_examples_to_features(
                 input_ids = ([pad_token] * padding_length) + input_ids
                 attention_mask = ([0 if mask_padding_with_zero else 1] * padding_length) + attention_mask
                 token_type_ids = ([pad_token_segment_id] * padding_length) + token_type_ids
-                label_ids = ([0] * padding_length) + label_ids
+                label_ids = ([pad_token_label_id] * padding_length) + label_ids
             else:
                 input_ids += [pad_token] * padding_length
                 attention_mask += [0 if mask_padding_with_zero else 1] * padding_length
                 token_type_ids += [pad_token_segment_id] * padding_length
-                label_ids += [0] * padding_length
+                label_ids += [pad_token_label_id] * padding_length
         
         assert len(input_ids) == max_seq_length
         assert len(attention_mask) == max_seq_length
