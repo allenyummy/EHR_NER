@@ -2,7 +2,7 @@
 # Author: Allen.Chiang
 # Description: Definition of custom arguments
 
-from typing import Optional
+from typing import List, Optional
 from dataclasses import dataclass, field
 
 
@@ -53,15 +53,6 @@ class QASLDataArguments:
         metadata={
             "help": "The maximum total input sequence length after tokenization. Sequences longer "
             "than this will be truncated, sequences shorter will be padded."
-        }
-    )
-    use_simplified: bool = field(
-        default=False,
-        metadata={
-            "help": "Whether to use simplified QA Sequence Labeling."
-            "Default: False"
-            "If True, just BIO will be used."
-            "If False, B-label, I-label, O will be used."
         }
     )
 
@@ -147,5 +138,14 @@ class ModelArguments:
         metadata={
             "help": "Whether or not the model should return a :class: `~transformers.file_utils.ModelOutput` instead of a plain tuple."
                     "It does not show in the BertConfig when it is False."
+        }
+    )
+    class_weights: Optional[List[float]] = field(
+        default=None,
+        metadata={
+            "help": "Set the list of float for weighted cross entropy. It's not essential to be add up to 1."
+                    "Num of list must be the same as num of labels which is from label_path."
+                    "Order of list must be the same as order of labels which is from label_path."
+                    "Ususally set it as inverse class count."
         }
     )
