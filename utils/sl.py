@@ -4,13 +4,20 @@
 
 import logging
 import os
+import numpy as np
 from filelock import FileLock
 from dataclasses import dataclass
-from typing import List, Dict, Optional, TextIO
-from transformers import PreTrainedTokenizer
+from typing import List, Dict, Tuple, Union, Optional, TextIO
+from transformers import PreTrainedTokenizer, EvalPrediction
 import torch
 from torch import nn
 from torch.utils.data.dataset import Dataset
+from utils.metrics_sl import (
+    accuracy_score, 
+    f1_score, 
+    precision_score, 
+    recall_score
+)
 
 logger = logging.getLogger(__name__)
 
@@ -238,7 +245,11 @@ def convert_examples_to_features(
         )
     return features
 
-def write_predictions_to_file(writer: TextIO, test_input_reader: TextIO, preds_list: List):
+def write_predictions_to_file(
+    writer: TextIO, 
+    test_input_reader: TextIO, 
+    preds_list: List):
+
     example_id = 0
     for line in test_input_reader:
         if line.startswith("-DOCSTART-") or line == "" or line == "\n":
@@ -253,9 +264,40 @@ def write_predictions_to_file(writer: TextIO, test_input_reader: TextIO, preds_l
             writer.write(output_line)
             logger.warning("Maximum sequence length exceeded: No prediction for '%s'.", line.split()[0])
 
-def get_labels(path: str) -> List[str]:
-    with open(path, "r") as f:
+def get_labels(path: str) -> Union[List[str], Dict[int, str], int]:
+    with open(path, "r", encoding="utf-8") as f:
         labels = f.read().splitlines()
     if "O" not in labels:
         labels = ["O"] + labels
-    return labels
+    
+    global label_map
+    ## The reason why I do not set it as a input parameter in align_predictions and compute_metrics but a global variable is because the function of compute_metrics from trainer of huggingface do not support it.
+    ## When the function of get_labels is called by train/run_ner.py, the global variable of label_map can be used in sl.py,
+    ## so that it can be used by the functions of align_predictions and compute_metrics.
+    label_map = {i: label for i, label in enumerate(labels)}
+    num_labels = len(labels)
+
+    return labels, label_map, num_labels
+
+def align_predictions(predictions: np.ndarray, label_ids: np.ndarray) -> Tuple[List[int], List[int]]:
+    preds = np.argmax(predictions, axis=2)
+    batch_size, seq_len = preds.shape
+    out_label_list = [[] for _ in range(batch_size)]
+    preds_list = [[] for _ in range(batch_size)]
+
+    for i in range(batch_size):
+        for j in range(seq_len):
+            if label_ids[i, j] != nn.CrossEntropyLoss().ignore_index:
+                out_label_list[i].append(label_map[label_ids[i][j]])
+                preds_list[i].append(label_map[preds[i][j]])
+
+    return preds_list, out_label_list
+
+def compute_metrics(p: EvalPrediction, label_map: Dict[int, str]) -> Dict:
+    preds_list, out_label_list = align_predictions(p.predictions, p.label_ids)
+    return {
+        "accuracy_score": accuracy_score(out_label_list, preds_list),
+        "precision": precision_score(out_label_list, preds_list),
+        "recall": recall_score(out_label_list, preds_list),
+        "f1": f1_score(out_label_list, preds_list),
+    }
