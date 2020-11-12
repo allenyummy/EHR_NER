@@ -1,6 +1,9 @@
 # encoding=utf-8
 # Author: Allen.Chiang
-# Description: run NER task either as sequence labeling task or as machine reading comprehension
+# Description: run NER task
+# sl: sequence labeling
+# qasl: question answering sequence labeling
+# mrc: machine reading comprehension
 
 import logging
 import logging.config
@@ -31,16 +34,13 @@ from utils.sl import (
     NerAsSLDataset,
     get_labels,
     write_predictions_to_file,
-)
-from utils.metrics_sl import (
-    accuracy_score, 
-    f1_score, 
-    precision_score, 
-    recall_score
+    align_predictions,
+    compute_metrics
 )
 from utils.qasl import NerAsQASLDataset
 from utils.mrc import NerAsMRCDataset
 from models.bert_sl import BertSLModel
+from models.bert_qasl import BertQASLModel
 from models.bert_mrc import BertMRCModel
 
 logging.config.fileConfig('configs/logging.conf')
@@ -52,28 +52,24 @@ def main():
     #--- Parse args ---#
     logger.info("======= Parse args =======")
     if len(sys.argv) != 2:
-        raise ValueError(
-            "Please enter the command: PYTHONPATH=./ python train/run_ner.py [sl or mrc]")
+        raise ValueError("Please enter the command: PYTHONPATH=./ python train/run_ner.py [sl, qasl, or mrc]")
 
-    config_json_file = os.path.join("configs", sys.argv[1]+"_config.json")
     if sys.argv[1] == "sl":
-        parser = HfArgumentParser(
-            (DataArguments, SLDataArguments, ModelArguments, TrainingArguments))
-
+        logger.info("======= Traditional Sequence Labeling =======")
+        parser = HfArgumentParser((DataArguments, SLDataArguments, ModelArguments, TrainingArguments))
     elif sys.argv[1] == "qasl":
-        parser = HfArgumentParser(
-            (DataArguments, QASLDataArguments, ModelArguments, TrainingArguments))
-
+        logger.info("======= QA Sequence Labeling =======")
+        parser = HfArgumentParser((DataArguments, QASLDataArguments, ModelArguments, TrainingArguments))
     elif sys.argv[1] == "mrc":
-        parser = HfArgumentParser(
-            (DataArguments, MRCDataArguments, ModelArguments, TrainingArguments))
-    
+        logger.info("======= Machine Reading Comprehension Sequence Labeling =======")
+        parser = HfArgumentParser((DataArguments, MRCDataArguments, ModelArguments, TrainingArguments))
     else:
-        raise ValueError(
-            "The second argv of sys must be sl (sequence labeling), qasl (QA sequence labeling), or mrc (machine reading comprehension).")
+        raise ValueError("The second argv of sys must be sl   (sequence labeling), \
+                                                         qasl (QA sequence labeling), \
+                                                         mrc  (machine reading comprehension).")
     
-    data_args, task_args, model_args, training_args = parser.parse_json_file(  # pylint: disable=unbalanced-tuple-unpacking
-        json_file=config_json_file)
+    config_json_file = os.path.join("configs", sys.argv[1]+"_config.json")
+    data_args, task_args, model_args, training_args = parser.parse_json_file(json_file = config_json_file)
 
     logger.debug(f"data_args: {data_args}")
     logger.debug(f"task_args: {task_args}")
@@ -92,21 +88,23 @@ def main():
 
     #--- Prepare labels ---#
     logger.info("======= Prepare labels =======")
-    labels = get_labels(data_args.labels_path)
-    label_map: Dict[int, str] = {i: label for i, label in enumerate(labels)}
-    num_labels = len(labels)
+    labels, label_map, num_labels = get_labels(data_args.labels_path)
+    logger.debug(f"label_map: {label_map}")
 
-    #--- Prepare model config and tokenizer ---#
-    logger.info("======= Prepare model config and tokenizer =======")
+    #--- Prepare model config ---#
+    logger.info("======= Prepare model config =======")
     config = BertConfig.from_pretrained(
         model_args.config_name if model_args.config_name else model_args.model_name_or_path,
         num_labels=num_labels,
         id2label=label_map,
         label2id={label: i for i, label in enumerate(labels)},
         cache_dir=model_args.cache_dir,
-        return_dict=model_args.return_dict,
+        return_dict=model_args.return_dict
     )
     logger.debug(f"config: {config}")
+
+    #--- Prepare tokenizer ---#
+    logger.info("======= Prepare tokenizer =======")
     tokenizer = BertTokenizer.from_pretrained(
         model_args.tokenizer_name if model_args.tokenizer_name else model_args.model_name_or_path,
         cache_dir=model_args.cache_dir,
@@ -118,10 +116,13 @@ def main():
     add_tokens = ['瘜', '皰', '搐', '齲', '蛀', '髕', '闌', '疝', '嚥',
                   '簍', '廔', '顳', '溼', '髖', '膈', '搔', '攣', '仟', '鐙', '蹠', '橈']
     tokenizer.add_tokens(add_tokens)
+    logger.debug(f"Add tokens: {add_tokens}")
 
+    #--- NER as Sequence Labeling Task ---#
     if sys.argv[1] == "sl":
 
         #--- Prepare model ---#
+        logger.info("======= Prepare model =======")
         model = BertSLModel.from_pretrained(
             model_args.model_name_or_path,
             from_tf=bool(".ckpt" in model_args.model_name_or_path),
@@ -131,6 +132,7 @@ def main():
         model.resize_token_embeddings(len(tokenizer))
 
         #--- Prepare datasets ---#
+        logger.info("======= Prepare dataset =======")
         train_dataset = (
             NerAsSLDataset(
                 data_dir=data_args.data_dir,
@@ -167,38 +169,12 @@ def main():
                 max_seq_length=task_args.max_seq_length,
                 overwrite_cache=data_args.overwrite_cache,
             )
-            if training_args.do_predict
+            if training_args.do_eval or training_args.do_predict
             else None
         )
 
-        # --- utils function for sl ---# (label_map is unique for sl task.)
-        def align_predictions(predictions: np.ndarray, label_ids: np.ndarray) -> Tuple[List[int], List[int]]:
-            preds = np.argmax(predictions, axis=2)
-
-            batch_size, seq_len = preds.shape
-
-            out_label_list = [[] for _ in range(batch_size)]
-            preds_list = [[] for _ in range(batch_size)]
-
-            for i in range(batch_size):
-                for j in range(seq_len):
-                    if label_ids[i, j] != nn.CrossEntropyLoss().ignore_index:
-                        out_label_list[i].append(label_map[label_ids[i][j]])
-                        preds_list[i].append(label_map[preds[i][j]])
-
-            return preds_list, out_label_list
-
-        def compute_metrics(p: EvalPrediction) -> Dict:
-            preds_list, out_label_list = align_predictions(
-                p.predictions, p.label_ids)
-            return {
-                "accuracy_score": accuracy_score(out_label_list, preds_list),
-                "precision": precision_score(out_label_list, preds_list),
-                "recall": recall_score(out_label_list, preds_list),
-                "f1": f1_score(out_label_list, preds_list),
-            }
-
         #--- Initialize trainer from huggingface ---#
+        logger.info("======= Prepare trainer =======")
         trainer = Trainer(
             model=model,
             args=training_args,
@@ -220,10 +196,9 @@ def main():
         if training_args.do_eval:
             for dataset in [train_dataset, eval_dataset, test_dataset]:
                 metrics = trainer.evaluate(dataset)
-                evaluation_results_file = os.path.join(
-                    training_args.output_dir, "evaluation_results.txt")
+                evaluation_results_file = os.path.join(training_args.output_dir, "evaluation_results.txt")
                 if trainer.is_world_master():
-                    with open(evaluation_results_file, "a") as writer:
+                    with open(evaluation_results_file, "a", encoding="utf-8") as writer:
                         logger.info(f"Eval results of {dataset.set} set")
                         writer.write(f"Eval results of {dataset.set} set\n")
                         for key, value in metrics.items():
@@ -235,8 +210,7 @@ def main():
         if training_args.do_predict:
             predictions, label_ids, metrics = trainer.predict(test_dataset)
             preds_list, _ = align_predictions(predictions, label_ids)
-            test_predictions_file = os.path.join(
-                training_args.output_dir, "test_predictions.txt")
+            test_predictions_file = os.path.join(training_args.output_dir, "test_predictions.txt")
             if trainer.is_world_master():
                 with open(test_predictions_file, "w", encoding="utf-8") as writer:
                     with open(os.path.join(data_args.data_dir, data_args.test_filename), "r", encoding="utf-8") as f:
@@ -245,15 +219,18 @@ def main():
     elif sys.argv[1] == "qasl":
 
         #--- Prepare model ---#
-        model = BertSLModel.from_pretrained(
+        logger.info("======= Prepare model =======")
+        model = BertQASLModel.from_pretrained(
             model_args.model_name_or_path,
             from_tf=bool(".ckpt" in model_args.model_name_or_path),
             config=config,
+            class_weights=model_args.class_weights,
             cache_dir=model_args.cache_dir,
         )
         model.resize_token_embeddings(len(tokenizer))
 
         #--- Prepare datasets ---#
+        logger.info("======= Prepare dataset =======")
         train_dataset = (
             NerAsQASLDataset(
                 data_dir=data_args.data_dir,
@@ -262,7 +239,6 @@ def main():
                 labels=labels,
                 model_type=config.model_type,
                 max_seq_length=task_args.max_seq_length,
-                use_simplified=task_args.use_simplified,
                 overwrite_cache=data_args.overwrite_cache,
             )
             if training_args.do_train or training_args.do_eval
@@ -276,7 +252,6 @@ def main():
                 labels=labels,
                 model_type=config.model_type,
                 max_seq_length=task_args.max_seq_length,
-                use_simplified=task_args.use_simplified,
                 overwrite_cache=data_args.overwrite_cache,
             )
             if training_args.do_train or training_args.do_eval
@@ -290,41 +265,14 @@ def main():
                 labels=labels,
                 model_type=config.model_type,
                 max_seq_length=task_args.max_seq_length,
-                use_simplified=task_args.use_simplified,
                 overwrite_cache=data_args.overwrite_cache,
             )
-            if training_args.do_predict
+            if training_args.do_eval or training_args.do_predict
             else None
         )
 
-        # --- utils function for sl ---# (label_map is unique for sl task.)
-        def align_predictions(predictions: np.ndarray, label_ids: np.ndarray) -> Tuple[List[int], List[int]]:
-            preds = np.argmax(predictions, axis=2)
-
-            batch_size, seq_len = preds.shape
-
-            out_label_list = [[] for _ in range(batch_size)]
-            preds_list = [[] for _ in range(batch_size)]
-
-            for i in range(batch_size):
-                for j in range(seq_len):
-                    if label_ids[i, j] != nn.CrossEntropyLoss().ignore_index:
-                        out_label_list[i].append(label_map[label_ids[i][j]])
-                        preds_list[i].append(label_map[preds[i][j]])
-
-            return preds_list, out_label_list
-
-        def compute_metrics(p: EvalPrediction) -> Dict:
-            preds_list, out_label_list = align_predictions(
-                p.predictions, p.label_ids)
-            return {
-                "accuracy_score": accuracy_score(out_label_list, preds_list),
-                "precision": precision_score(out_label_list, preds_list),
-                "recall": recall_score(out_label_list, preds_list),
-                "f1": f1_score(out_label_list, preds_list),
-            }
-
         #--- Initialize trainer from huggingface ---#
+        logger.info("======= Prepare trainer =======")
         trainer = Trainer(
             model=model,
             args=training_args,
@@ -346,8 +294,7 @@ def main():
         if training_args.do_eval:
             for dataset in [train_dataset, eval_dataset, test_dataset]:
                 metrics = trainer.evaluate(dataset)
-                evaluation_results_file = os.path.join(
-                    training_args.output_dir, "evaluation_results.txt")
+                evaluation_results_file = os.path.join(training_args.output_dir, "evaluation_results.txt")
                 if trainer.is_world_master():
                     with open(evaluation_results_file, "a") as writer:
                         logger.info(f"Eval results of {dataset.set} set")
@@ -405,7 +352,7 @@ def main():
                 max_seq_length=task_args.max_seq_length,
                 overwrite_cache=data_args.overwrite_cache,
             )
-            if training_args.do_predict
+            if training_args.do_eval or training_args.do_predict
             else None
         )
 
