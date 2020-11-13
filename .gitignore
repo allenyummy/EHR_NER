@@ -1,7 +1,8 @@
-data/
 .pytest_cache/
 .coverage
 __pycache__/
+data/
 runs/
 outputs/
 example/
+trained_model/
