@@ -18,7 +18,7 @@ class BertQASLModel(BertPreTrainedModel):
         super().__init__(config)
         self.num_labels = config.num_labels
         self.return_dict = config.return_dict if hasattr(config, "return_dict") else False
-        self.class_weights = torch.FloatTensor(class_weights).cuda()
+        self.class_weights = torch.FloatTensor(class_weights).cuda() if class_weights else None
         self.bert = BertModel(config, add_pooling_layer=False)
         self.dropout = Dropout(config.hidden_dropout_prob)
         self.classifier = Linear(config.hidden_size, config.num_labels)
