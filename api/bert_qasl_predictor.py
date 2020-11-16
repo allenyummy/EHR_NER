@@ -18,12 +18,11 @@ class BertQASLPredictor:
         self.model_dir = model_dir
         self.config, self.tokenizer, self.model = self._load()
         self.id2label = self.config["id2label"]
-        self.label2id = self.config["label2id"]
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.model = self.model.to(self.device)
         self.model.eval()
     
-    def predict(self, query_tag: str="", query: str="", passage: str=""):
+    def predict(self, query_tag: str="", query: str="", passage: str="", top_k: int=1):
         inputs = self.tokenizer(query,
                                 passage,
                                 truncation = True,
@@ -32,37 +31,27 @@ class BertQASLPredictor:
         with torch.no_grad():
             logits = self.model(**inputs).logits
         logits = F.softmax(logits, dim=2)
-        label_id_pred = torch.argmax(logits, dim=2).detach().cpu().numpy().tolist()[0]
-        label_id_pred = torch.topk(logits, k=3, dim=2).indices.detach().cpu().numpy().tolist()[0]
-        
-        labels_pred_top1 = [self.id2label[f'{i[0]}'] for i in label_id_pred]
-        labels_pred_top2 = [self.id2label[f'{i[1]}'] for i in label_id_pred]
-        labels_pred_top3 = [self.id2label[f'{i[2]}'] for i in label_id_pred]
-
-        labels_prob_top1 = [probs[self.label2id[digit]].item() for probs, digit in zip(logits[0], labels_pred_top1)]
-        labels_prob_top2 = [probs[self.label2id[digit]].item() for probs, digit in zip(logits[0], labels_pred_top2)]
-        labels_prob_top3 = [probs[self.label2id[digit]].item() for probs, digit in zip(logits[0], labels_pred_top3)]
-
+        # label_id_pred = torch.argmax(logits, dim=2).detach().cpu().numpy().tolist()[0]
+        pred = torch.topk(logits, k=top_k, dim=2)
+        label_id_pred = pred.indices.detach().cpu().numpy()[0]
+        label_id_prob = pred.values.detach().cpu().numpy()[0]
         tokens = self.tokenizer.convert_ids_to_tokens(inputs.input_ids.cpu().detach().numpy().tolist()[0])
+
+        results = list()
+        for i, t in enumerate(tokens):
+            r = ()
+            for k in range(top_k):
+                lidp = label_id_pred[i,k]
+                lp = self.id2label[str(lidp)]
+                lp_refine = f"{lp}-{query_tag}" if lp != "O" else lp
+                p = label_id_prob[i,k]
+                r += (lp_refine, p)
+            results.append((t,)+ r)
 
         ## [CLS] Query [SEP] Passage [SEP]
         ## just keep model prediction for passage.
         first_sep_idx = tokens.index("[SEP]")
-        tokens = tokens[first_sep_idx+1:-1]
-        labels_pred_top1 = labels_pred_top1[first_sep_idx+1:-1]
-        labels_prob_top1 = labels_prob_top1[first_sep_idx+1:-1]
-        labels_pred_top2 = labels_pred_top2[first_sep_idx+1:-1]
-        labels_prob_top2 = labels_prob_top2[first_sep_idx+1:-1]
-        labels_pred_top3 = labels_pred_top3[first_sep_idx+1:-1]
-        labels_prob_top3 = labels_prob_top3[first_sep_idx+1:-1]
-
-        results = [(t, 
-                    f"{lp}-{query_tag}" if lp != "O" else lp, round(p, 4),
-                    f"{lp2}-{query_tag}" if lp2 != "O" else lp2, round(p2, 4),
-                    f"{lp3}-{query_tag}" if lp3 != "O" else lp3, round(p3, 4),
-                   ) 
-                   for t, lp, p, lp2, p2, lp3, p3 in zip(tokens, labels_pred_top1, labels_prob_top1, labels_pred_top2, labels_prob_top2, labels_pred_top3, labels_prob_top3)
-                  ]
+        results = results[first_sep_idx+1:-1]
 
         return results
 
@@ -101,7 +90,7 @@ if __name__ == "__main__":
     query = qasl_query[q_tag]
     print (query)
     print (passage)
-    results = model.predict(query_tag=q_tag, query=query, passage=passage)
+    results = model.predict(q_tag, query, passage, 3)
     import pandas as pd; pd.set_option('display.max_rows', 200)
     df = pd.DataFrame(results, columns =['Token', 'Top1_label', 'Top1_prob', 'Top2_label', 'Top2_prob', 'Top3_label', 'Top3_prob']) 
     print (df)
