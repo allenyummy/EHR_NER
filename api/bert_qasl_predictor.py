@@ -6,14 +6,14 @@ import logging
 import os
 import json
 import torch
-import torch.nn.functional as F 
+import torch.nn.functional as F
 from transformers import BertTokenizer
 from models.bert_qasl import BertQASLModel
 
 logger = logging.getLogger(__name__)
 
+
 class BertQASLPredictor:
-    
     def __init__(self, model_dir: str):
         self.model_dir = model_dir
         self.config, self.tokenizer, self.model = self._load()
@@ -21,13 +21,13 @@ class BertQASLPredictor:
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.model = self.model.to(self.device)
         self.model.eval()
-    
-    def predict(self, query_tag: str="", query: str="", passage: str="", top_k: int=1):
-        inputs = self.tokenizer(query,
-                                passage,
-                                truncation = True,
-                                max_length = 512,
-                                return_tensors = 'pt')
+
+    def predict(
+        self, query_tag: str = "", query: str = "", passage: str = "", top_k: int = 1
+    ):
+        inputs = self.tokenizer(
+            query, passage, truncation=True, max_length=512, return_tensors="pt"
+        )
         with torch.no_grad():
             logits = self.model(**inputs).logits
         logits = F.softmax(logits, dim=2)
@@ -35,23 +35,25 @@ class BertQASLPredictor:
         pred = torch.topk(logits, k=top_k, dim=2)
         label_id_pred = pred.indices.detach().cpu().numpy()[0]
         label_id_prob = pred.values.detach().cpu().numpy()[0]
-        tokens = self.tokenizer.convert_ids_to_tokens(inputs.input_ids.cpu().detach().numpy().tolist()[0])
+        tokens = self.tokenizer.convert_ids_to_tokens(
+            inputs.input_ids.cpu().detach().numpy().tolist()[0]
+        )
 
         results = list()
         for i, t in enumerate(tokens):
             r = ()
             for k in range(top_k):
-                lidp = label_id_pred[i,k]
+                lidp = label_id_pred[i, k]
                 lp = self.id2label[str(lidp)]
                 lp_refine = f"{lp}-{query_tag}" if lp != "O" else lp
-                p = label_id_prob[i,k]
+                p = label_id_prob[i, k]
                 r += (lp_refine, p)
-            results.append((t,)+ r)
+            results.append((t,) + r)
 
         ## [CLS] Query [SEP] Passage [SEP]
         ## just keep model prediction for passage.
         first_sep_idx = tokens.index("[SEP]")
-        results = results[first_sep_idx+1:-1]
+        results = results[first_sep_idx + 1 : -1]
 
         return results
 
@@ -64,10 +66,11 @@ class BertQASLPredictor:
         model = BertQASLModel.from_pretrained(self.model_dir, return_dict=True)
         return config, tokenizer, model
 
+
 if __name__ == "__main__":
-    
+
     model_dir = "trained_model/0817_8786_concat_num/bert_qasl/2020-11-11-00@hfl@chinese-bert-wwm@weightedCE-0.11-1-0.16_S-512_B-4_E-5_LR-5e-5_SD-1/"
-    model = BertQASLPredictor(model_dir = model_dir)
+    model = BertQASLPredictor(model_dir=model_dir)
     passage = "病患於民國108年10月5日至本院入院急診，經手術之後，民國108年10月7日出院。"
     # passage = "患者於民國109年01月20日08時20分急診就醫，經縫合手術治療後於民國109年01月20日10時50分出院。"
     # passage = "病患於民國108年10月5日住院接受既定化學(Lipodox,Endoxan)治療，並於2020年05月05日出院,共住院02日。患者於2020/04/13,2020/05/04,共門診02次。"
@@ -84,14 +87,29 @@ if __name__ == "__main__":
 
     with open("configs/qasl_query.json", "r") as f:
         qasl_query = json.load(f)
-    
+
     import sys
+
     q_tag = sys.argv[1]
     query = qasl_query[q_tag]
-    print (query)
-    print (passage)
+    print(query)
+    print(passage)
     results = model.predict(q_tag, query, passage, 3)
-    import pandas as pd; pd.set_option('display.max_rows', 200)
-    df = pd.DataFrame(results, columns =['Token', 'Top1_label', 'Top1_prob', 'Top2_label', 'Top2_prob', 'Top3_label', 'Top3_prob']) 
-    print (df)
-    
+    import pandas as pd
+
+    pd.set_option("display.max_rows", 200)
+    df = pd.DataFrame(
+        results,
+        columns=[
+            "Token",
+            "Top1_label",
+            "Top1_prob",
+            "Top2_label",
+            "Top2_prob",
+            "Top3_label",
+            "Top3_prob",
+        ],
+    )
+    print(df)
+
+    a = {"s", "sgfgsf", "dad"}

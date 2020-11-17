@@ -14,6 +14,7 @@ def config():
     with open("configs/config.json", "r") as f:
         return json.load(f)
 
+
 def test_config_elements(config):
     assert config.get("data_dir") != None
     assert config.get("labels_path") != None

@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 time = datetime.datetime.today().strftime("%Y/%m/%d_%H:%M:%S")
 version = "v1.0_" + time
 
+
 def init_parent():
     global passage
     global passage_tokens
@@ -26,6 +27,7 @@ def init_parent():
     temp_ans = list()
     idx = 0
 
+
 def init_child():
     global text
     global temp_cate
@@ -36,7 +38,8 @@ def init_child():
     start_pos = 0
     end_pos = 0
 
-with open (os.path.join("configs", "qasl_query.json"), "r", encoding="utf-8") as f: 
+
+with open(os.path.join("configs", "qasl_query.json"), "r", encoding="utf-8") as f:
     mrc_query = json.load(f)
 
 for dataset in ["train.txt", "dev.txt", "test.txt"]:
@@ -49,19 +52,19 @@ for dataset in ["train.txt", "dev.txt", "test.txt"]:
     init_child()
 
     pid = 0
-    with open (os.path.join("data", "sl", dataset), "r", encoding="utf-8") as fin:
+    with open(os.path.join("data", "sl", dataset), "r", encoding="utf-8") as fin:
         for i, line in tqdm(enumerate(fin)):
             line = line.rstrip()
             if line == "":
 
                 if text != "":
-                    end_pos = idx-1
+                    end_pos = idx - 1
                     temp_ans.append(
                         {
                             "text": text,
                             "label": temp_cate,
                             "start_pos": start_pos,
-                            "end_pos": end_pos
+                            "end_pos": end_pos,
                         }
                     )
                     init_child()
@@ -80,29 +83,29 @@ for dataset in ["train.txt", "dev.txt", "test.txt"]:
                 char, label = line.split()
                 flag, cate = label.split("-") if label != "O" else (None, label)
                 if label == "O" and text != "":
-                    end_pos = idx-1
+                    end_pos = idx - 1
                     temp_ans.append(
                         {
                             "text": text,
                             "label": temp_cate,
                             "start_pos": start_pos,
-                            "end_pos": end_pos
+                            "end_pos": end_pos,
                         }
                     )
                     init_child()
-                
+
                 elif label != "O":
                     if temp_cate == "":
                         start_pos = idx
 
                     elif temp_cate != "" and cate != temp_cate:
-                        end_pos = idx-1
+                        end_pos = idx - 1
                         temp_ans.append(
                             {
                                 "text": text,
                                 "label": temp_cate,
                                 "start_pos": start_pos,
-                                "end_pos": end_pos
+                                "end_pos": end_pos,
                             }
                         )
                         init_child()
@@ -114,17 +117,17 @@ for dataset in ["train.txt", "dev.txt", "test.txt"]:
                 passage += char
                 passage_tokens.append(char)
                 idx += 1
-        
+
         if passage != "" and temp_ans:
             mrc_data["data"].append(
-                    {
-                        "pid": pid,
-                        "passage": passage,
-                        "passage_tokens": passage_tokens,
-                        "answers": temp_ans,
-                    }
+                {
+                    "pid": pid,
+                    "passage": passage,
+                    "passage_tokens": passage_tokens,
+                    "answers": temp_ans,
+                }
             )
 
-    with open (os.path.join("data", "qasl", dataset), "w") as fout:
+    with open(os.path.join("data", "qasl", dataset), "w") as fout:
         mrc_data_json = json.dumps(mrc_data, indent=4, ensure_ascii=False)
         fout.write(mrc_data_json)

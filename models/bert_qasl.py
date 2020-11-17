@@ -13,12 +13,15 @@ logger = logging.getLogger(__name__)
 
 
 class BertQASLModel(BertPreTrainedModel):
-
     def __init__(self, config, class_weights=None):
         super().__init__(config)
         self.num_labels = config.num_labels
-        self.return_dict = config.return_dict if hasattr(config, "return_dict") else False
-        self.class_weights = torch.FloatTensor(class_weights).cuda() if class_weights else None
+        self.return_dict = (
+            config.return_dict if hasattr(config, "return_dict") else False
+        )
+        self.class_weights = (
+            torch.FloatTensor(class_weights).cuda() if class_weights else None
+        )
         self.bert = BertModel(config, add_pooling_layer=False)
         self.dropout = Dropout(config.hidden_dropout_prob)
         self.classifier = Linear(config.hidden_size, config.num_labels)
@@ -36,7 +39,7 @@ class BertQASLModel(BertPreTrainedModel):
             input_ids=input_ids,
             attention_mask=attention_mask,
             token_type_ids=token_type_ids,
-            return_dict=self.return_dict
+            return_dict=self.return_dict,
         )
 
         sequence_output = outputs[0]
@@ -51,7 +54,9 @@ class BertQASLModel(BertPreTrainedModel):
                 active_loss = attention_mask.view(-1) == 1
                 active_logits = logits.view(-1, self.num_labels)
                 active_labels = torch.where(
-                    active_loss, labels.view(-1), torch.tensor(loss_fct.ignore_index).type_as(labels)
+                    active_loss,
+                    labels.view(-1),
+                    torch.tensor(loss_fct.ignore_index).type_as(labels),
                 )
                 loss = loss_fct(active_logits, active_labels)
             else:

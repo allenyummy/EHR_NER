@@ -18,6 +18,7 @@ class TokenClassificationModelOutput(ModelOutput):
     hidden_states: Optional[Tuple[torch.FloatTensor]] = None
     attentions: Optional[Tuple[torch.FloatTensor]] = None
 
+
 @dataclass
 class QuestionAnsweringModelOutput(ModelOutput):
     loss: Optional[torch.FloatTensor] = None

@@ -11,10 +11,11 @@ logger = logging.getLogger(__name__)
 
 
 class BertMRCModel(BertPreTrainedModel):
-
     def __init__(self, config):
         super().__init__(config)
-        self.return_dict = config.return_dict if hasattr(config, "return_dict") else False
+        self.return_dict = (
+            config.return_dict if hasattr(config, "return_dict") else False
+        )
         self.bert = BertModel(config, add_pooling_layer=False)
         self.start_outputs = Linear(config.hidden_size, 2)
         self.end_outoputs = Linear(config.hidden_size, 2)
@@ -27,13 +28,13 @@ class BertMRCModel(BertPreTrainedModel):
         attention_mask=None,
         start_positions=None,
         end_positions=None,
-        return_dict=None
+        return_dict=None,
     ):
         outputs = self.bert(
             input_ids=input_ids,
             attention_mask=attention_mask,
             token_type_ids=token_type_ids,
-            return_dict=self.return_dict
+            return_dict=self.return_dict,
         )
 
         sequence_output = outputs[0]
