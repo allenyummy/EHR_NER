@@ -1,6 +1,7 @@
 .pytest_cache/
 .coverage
 .DS_Store
+.vscode
 __pycache__/
 data/
 runs/
