@@ -67,6 +67,7 @@ if __name__ == "__main__":
 
     model_dir = "trained_model/0817_8786_concat_num/bert_sl/2020-09-02-00@hfl@chinese-bert-wwm@CE_S-512_B-4_E-100_LR-5e-5_SD-1"
     model = BertSLPredictor(model_dir=model_dir)
+    passage = "病患於109年10月5日入院急診。"
     passage = "病患於民國108年10月5日至本院入院急診，經手術之後，民國108年10月7日出院。"
     passage2 = "患者於民國109年01月20日10時29分至急診就醫，經縫合手術治療後於民國109年01月20日10時50分離院。"
 
