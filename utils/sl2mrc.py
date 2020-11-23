@@ -39,7 +39,7 @@ def init_child():
     end_pos = 0
 
 
-with open(os.path.join("configs", "qasl_query.json"), "r", encoding="utf-8") as f:
+with open(os.path.join("configs", "qasl_simple_query.json"), "r", encoding="utf-8") as f:
     mrc_query = json.load(f)
 
 for dataset in ["train.txt", "dev.txt", "test.txt"]:
@@ -52,7 +52,7 @@ for dataset in ["train.txt", "dev.txt", "test.txt"]:
     init_child()
 
     pid = 0
-    with open(os.path.join("data", "sl", dataset), "r", encoding="utf-8") as fin:
+    with open(os.path.join("data", "sl", "0817_8786_concat_num", dataset), "r", encoding="utf-8") as fin:
         for i, line in tqdm(enumerate(fin)):
             line = line.rstrip()
             if line == "":
@@ -128,6 +128,6 @@ for dataset in ["train.txt", "dev.txt", "test.txt"]:
                 }
             )
 
-    with open(os.path.join("data", "qasl", dataset), "w") as fout:
+    with open(os.path.join("data", "simqasl", "0817_8786_concat_num", dataset), "w") as fout:
         mrc_data_json = json.dumps(mrc_data, indent=4, ensure_ascii=False)
         fout.write(mrc_data_json)
