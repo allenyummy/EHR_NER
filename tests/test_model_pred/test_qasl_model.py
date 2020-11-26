@@ -37,7 +37,7 @@ def predict(model, query, passage, threshold=0.00001):
         results_top1.extend(EntityFromList(seq=seq_top1, scheme=IOB2).entities)
         seq_top2 = [(t, l if p > threshold else "O") for t, l, p in zip(token, l2, p2)]
         results_top2.extend(EntityFromList(seq=seq_top2, scheme=IOB2).entities)
-    
+
     results_top2_prune = rule1_prune(results_top2)
     return results_top1, results_top2, results_top2_prune
 
