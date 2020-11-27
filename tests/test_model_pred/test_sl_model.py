@@ -18,11 +18,121 @@ def model():
     return BertSL
 
 
-def testcase1(model, testcase16):
-    passage = testcase16["passage"]
-    results = model.predict(passage)
-    token, label, prob = zip(*results)
+def predict(model, passage):
+    res = model.predict(passage)
+    token, label, prob = zip(*res)
     seq = [(t, l) for t, l in zip(token, label)]
+    results = EntityFromList(seq=seq, scheme=IOB2).entities
+    return results
+
+
+def logging(passage, results):
     logger.info(f"passage: {passage}")
-    for ent in EntityFromList(seq=seq, scheme=IOB2).entities:
+    logger.info("==== Top 1 prediction ====")
+    for ent in sorted(results, key=lambda x: x.start_pos):
         logger.info(ent)
+
+
+def testcase_one(model, testcase1):
+    passage = testcase1["passage"]
+    results = predict(model, passage)
+    logging(passage, results)
+
+
+def testcase_two(model, testcase2):
+    passage = testcase2["passage"]
+    results = predict(model, passage)
+    logging(passage, results)
+
+
+def testcase_three(model, testcase3):
+    passage = testcase3["passage"]
+    results = predict(model, passage)
+    logging(passage, results)
+
+
+def testcase_four(model, testcase4):
+    passage = testcase4["passage"]
+    results = predict(model, passage)
+    logging(passage, results)
+
+
+def testcase_five(model, testcase5):
+    passage = testcase5["passage"]
+    results = predict(model, passage)
+    logging(passage, results)
+
+
+def testcase_six(model, testcase6):
+    passage = testcase6["passage"]
+    results = predict(model, passage)
+    logging(passage, results)
+
+
+def testcase_seven(model, testcase7):
+    passage = testcase7["passage"]
+    results = predict(model, passage)
+    logging(passage, results)
+
+
+def testcase_eight(model, testcase8):
+    passage = testcase8["passage"]
+    results = predict(model, passage)
+    logging(passage, results)
+
+
+def testcase_nine(model, testcase9):
+    passage = testcase9["passage"]
+    results = predict(model, passage)
+    logging(passage, results)
+
+
+def testcase_ten(model, testcase10):
+    passage = testcase10["passage"]
+    results = predict(model, passage)
+    logging(passage, results)
+
+
+def testcase_eleven(model, testcase11):
+    passage = testcase11["passage"]
+    results = predict(model, passage)
+    logging(passage, results)
+
+
+def testcase_twelve(model, testcase12):
+    passage = testcase12["passage"]
+    results = predict(model, passage)
+    logging(passage, results)
+
+
+def testcase_thirteen(model, testcase13):
+    passage = testcase13["passage"]
+    results = predict(model, passage)
+    logging(passage, results)
+
+
+def testcase_fourteen(model, testcase14):
+    passage = testcase14["passage"]
+    results = predict(model, passage)
+    logging(passage, results)
+
+
+def testcase_fifteen(model, testcase15):
+    passage = testcase15["passage"]
+    results = predict(model, passage)
+    logging(passage, results)
+
+
+def testcase_sixteen(model, testcase16):
+    passage = testcase16["passage"]
+    results = predict(model, passage)
+    logging(passage, results)
+
+
+def testcase_seventeen(model, testcase17):
+    passage = testcase17["passage"]
+    results = predict(model, passage)
+    logging(passage, results)
+
+
+

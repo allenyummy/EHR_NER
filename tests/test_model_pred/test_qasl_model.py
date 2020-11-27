@@ -37,7 +37,6 @@ def predict(model, query, passage, threshold=0.00001):
         results_top1.extend(EntityFromList(seq=seq_top1, scheme=IOB2).entities)
         seq_top2 = [(t, l if p > threshold else "O") for t, l, p in zip(token, l2, p2)]
         results_top2.extend(EntityFromList(seq=seq_top2, scheme=IOB2).entities)
-
     results_top2_prune = rule1_prune(results_top2)
     return results_top1, results_top2, results_top2_prune
 
@@ -64,104 +63,104 @@ def logging(passage, results_top1, results_top2, results_top2_prune):
         logger.info(ent)
 
 
-def testcase1(model, query, testcase1):
+def testcase_one(model, query, testcase1):
     passage = testcase1["passage"]
     results_top1, results_top2, results_top2_prune = predict(model, query, passage)
     logging(passage, results_top1, results_top2, results_top2_prune)
 
 
-def testcase2(model, query, testcase2):
+def testcase_two(model, query, testcase2):
     passage = testcase2["passage"]
     results_top1, results_top2, results_top2_prune = predict(model, query, passage)
     logging(passage, results_top1, results_top2, results_top2_prune)
 
 
-def testcase3(model, query, testcase3):
+def testcase_three(model, query, testcase3):
     passage = testcase3["passage"]
     results_top1, results_top2, results_top2_prune = predict(model, query, passage)
     logging(passage, results_top1, results_top2, results_top2_prune)
 
 
-def testcase4(model, query, testcase4):
+def testcase_four(model, query, testcase4):
     passage = testcase4["passage"]
     results_top1, results_top2, results_top2_prune = predict(model, query, passage)
     logging(passage, results_top1, results_top2, results_top2_prune)
 
 
-def testcase5(model, query, testcase5):
+def testcase_five(model, query, testcase5):
     passage = testcase5["passage"]
     results_top1, results_top2, results_top2_prune = predict(model, query, passage)
     logging(passage, results_top1, results_top2, results_top2_prune)
 
 
-def testcase6(model, query, testcase6):
+def testcase_six(model, query, testcase6):
     passage = testcase6["passage"]
     results_top1, results_top2, results_top2_prune = predict(model, query, passage)
     logging(passage, results_top1, results_top2, results_top2_prune)
 
 
-def testcase7(model, query, testcase7):
+def testcase_seven(model, query, testcase7):
     passage = testcase7["passage"]
     results_top1, results_top2, results_top2_prune = predict(model, query, passage)
     logging(passage, results_top1, results_top2, results_top2_prune)
 
 
-def testcase8(model, query, testcase8):
+def testcase_eight(model, query, testcase8):
     passage = testcase8["passage"]
     results_top1, results_top2, results_top2_prune = predict(model, query, passage)
     logging(passage, results_top1, results_top2, results_top2_prune)
 
 
-def testcase9(model, query, testcase9):
+def testcase_nine(model, query, testcase9):
     passage = testcase9["passage"]
     results_top1, results_top2, results_top2_prune = predict(model, query, passage)
     logging(passage, results_top1, results_top2, results_top2_prune)
 
 
-def testcase10(model, query, testcase10):
+def testcase_ten(model, query, testcase10):
     passage = testcase10["passage"]
     results_top1, results_top2, results_top2_prune = predict(model, query, passage)
     logging(passage, results_top1, results_top2, results_top2_prune)
 
 
-def testcase11(model, query, testcase11):
+def testcase_eleven(model, query, testcase11):
     ## rule: 2020-05-25
     passage = testcase11["passage"]
     results_top1, results_top2, results_top2_prune = predict(model, query, passage)
     logging(passage, results_top1, results_top2, results_top2_prune)
 
 
-def testcase12(model, query, testcase12):
+def testcase_twelve(model, query, testcase12):
     passage = testcase12["passage"]
     results_top1, results_top2, results_top2_prune = predict(model, query, passage)
     logging(passage, results_top1, results_top2, results_top2_prune)
 
 
-def testcase13(model, query, testcase13):
+def testcase_thirteen(model, query, testcase13):
     passage = testcase13["passage"]
     results_top1, results_top2, results_top2_prune = predict(model, query, passage)
     logging(passage, results_top1, results_top2, results_top2_prune)
 
 
-def testcase14(model, query, testcase14):
+def testcase_fourteen(model, query, testcase14):
     passage = testcase14["passage"]
     results_top1, results_top2, results_top2_prune = predict(model, query, passage)
     logging(passage, results_top1, results_top2, results_top2_prune)
 
 
-def testcase15(model, query, testcase15):
+def testcase_fifteen(model, query, testcase15):
     passage = testcase15["passage"]
     results_top1, results_top2, results_top2_prune = predict(model, query, passage)
     logging(passage, results_top1, results_top2, results_top2_prune)
 
 
-def testcase16(model, query, testcase16):
+def testcase_sixteen(model, query, testcase16):
     passage = testcase16["passage"]
     results_top1, results_top2, results_top2_prune = predict(model, query, passage)
     logging(passage, results_top1, results_top2, results_top2_prune)
 
 
-def testcase17(model, query, testcase17):
+def testcase_seventeen(model, query, testcase17):
     passage = testcase17["passage"]
     results_top1, results_top2, results_top2_prune = predict(model, query, passage)
     logging(passage, results_top1, results_top2, results_top2_prune)
