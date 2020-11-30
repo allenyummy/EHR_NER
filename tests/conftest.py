@@ -108,3 +108,9 @@ def testcase16():
 def testcase17():
     passage = "病患因上述原因，於2020年4月26日住院，4月27日接受人工血管置放手術，4月28日接受靜脈注射全身性化學治療，4月29日出院，宜於門診持續追蹤治療--以下空白--"
     return {"passage": passage}
+
+
+@pytest.fixture(scope="session")
+def testcase18():
+    passage = "病患於2019年5月18日住院接受痔瘡手術。"
+    return {"passage": passage}
