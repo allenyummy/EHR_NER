@@ -5,6 +5,8 @@
 import logging
 import pytest
 import json
+import re
+from utils.re_datetime import Pattern
 from api.bert_qasl_predictor import BertQASLPredictor
 from src.scheme import IOB2
 from src.entity import EntityFromList
@@ -39,15 +41,16 @@ def predict(model, query, passage, threshold=0.0000008):
         results_top1.extend(EntityFromList(seq=seq_top1, scheme=IOB2).entities)
         seq_top2 = [(t, l if p > threshold else "O") for t, l, p in zip(token, l2, p2)]
         results_top2.extend(EntityFromList(seq=seq_top2, scheme=IOB2).entities)
-    results_top2_prune = rule1_prune(results_top2)
+    results_top2_prune = pat1_prune(results_top2)
     return results_top1, results_top2, results_top2_prune
 
 
-def rule1_prune(results):
+def pat1_prune(results):
     results_prune = list()
     for res in results:
         if any(res.type.endswith(s) for s in ["D", "S", "E"]):
-            if any(res.text.startswith(s) for s in ["民", "1"]) and any(res.text.endswith(s) for s in ["分", "日"]):
+            check = re.search(Pattern.pat1.value, res.text)
+            if check and res.text == check.group():
                 results_prune.append(res)
     return results_prune
 
@@ -126,7 +129,6 @@ def testcase_ten(model, query, testcase10):
 
 
 def testcase_eleven(model, query, testcase11):
-    ## rule: 2020-05-25
     passage = testcase11["passage"]
     results_top1, results_top2, results_top2_prune = predict(model, query, passage)
     logging(passage, results_top1, results_top2, results_top2_prune)
@@ -164,5 +166,11 @@ def testcase_sixteen(model, query, testcase16):
 
 def testcase_seventeen(model, query, testcase17):
     passage = testcase17["passage"]
+    results_top1, results_top2, results_top2_prune = predict(model, query, passage)
+    logging(passage, results_top1, results_top2, results_top2_prune)
+
+
+def testcase_eighteen(model, query, testcase18):
+    passage = testcase18["passage"]
     results_top1, results_top2, results_top2_prune = predict(model, query, passage)
     logging(passage, results_top1, results_top2, results_top2_prune)
