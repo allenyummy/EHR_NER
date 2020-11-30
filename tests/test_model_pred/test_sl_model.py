@@ -135,4 +135,8 @@ def testcase_seventeen(model, testcase17):
     logging(passage, results)
 
 
+def testcase_eighteen(model, testcase18):
+    passage = testcase18["passage"]
+    results = predict(model, passage)
+    logging(passage, results)
 
