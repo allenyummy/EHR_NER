@@ -41,16 +41,19 @@ def predict(model, query, passage, threshold=0.0000008):
         results_top1.extend(EntityFromList(seq=seq_top1, scheme=IOB2).entities)
         seq_top2 = [(t, l if p > threshold else "O") for t, l, p in zip(token, l2, p2)]
         results_top2.extend(EntityFromList(seq=seq_top2, scheme=IOB2).entities)
-    results_top2_prune = pat1_prune(results_top2)
+    results_top2_prune = pat_prune(results_top2)
     return results_top1, results_top2, results_top2_prune
 
 
-def pat1_prune(results):
+def pat_prune(results):
     results_prune = list()
     for res in results:
         if any(res.type.endswith(s) for s in ["D", "S", "E"]):
-            check = re.search(Pattern.pat1.value, res.text)
-            if check and res.text == check.group():
+            check_pat1 = re.search(Pattern.pat1.value, res.text)
+            if check_pat1 and res.text == check_pat1.group():
+                results_prune.append(res)
+            check_pat2 = re.search(Pattern.pat2.value, res.text)
+            if check_pat2 and res.text == check_pat2.group():
                 results_prune.append(res)
     return results_prune
 
@@ -172,5 +175,11 @@ def testcase_seventeen(model, query, testcase17):
 
 def testcase_eighteen(model, query, testcase18):
     passage = testcase18["passage"]
+    results_top1, results_top2, results_top2_prune = predict(model, query, passage)
+    logging(passage, results_top1, results_top2, results_top2_prune)
+
+
+def testcase_nineteen(model, query, testcase19):
+    passage = testcase19["passage"]
     results_top1, results_top2, results_top2_prune = predict(model, query, passage)
     logging(passage, results_top1, results_top2, results_top2_prune)

@@ -18,3 +18,13 @@ def testcase_one(testcase2):
     results = re.search(pat.value, passage)
     logger.info(results)
     logger.info(results.group())
+
+
+def testcase_two():
+    passage = "109##5##2吃飯"
+    pat = Pattern.pat2
+    logger.info(passage)
+    logger.info(f"{pat.value}")
+    results = re.search(pat.value, passage)
+    logger.info(results)
+    logger.info(results.group())

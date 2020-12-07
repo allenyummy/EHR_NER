@@ -114,3 +114,9 @@ def testcase17():
 def testcase18():
     passage = "病患於2019年5月18日住院接受痔瘡手術。"
     return {"passage": passage}
+
+
+@pytest.fixture(scope="session")
+def testcase19():
+    passage = "病患於1090810,1090811急診就診,1090811入院並接受骨折復位鋼針固定手術,1090813出院,共計住院3天,1090819門診追蹤治療。預計骨癒合約需三個月,專人看護一個月,需休養及吊帶使用並避免手臂肩膀活動三個月,證明用。(以下空白)"
+    return {"passage": passage}
