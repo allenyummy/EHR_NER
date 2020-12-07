@@ -39,13 +39,19 @@ class BertSLPredictor:
 
         results = list()
         for i, t in enumerate(tokens):
-            r = ()
-            for k in range(top_k):
-                lidp = label_id_pred[i, k]
-                lp = self.id2label[str(lidp)]
-                p = label_id_prob[i, k]
-                r += (lp, p)
-            results.append((t,) + r)
+            if "##" in t:
+                temp = results.pop()
+                modi_t = temp[0] + t[2:]  ## 109 + ##02 -> 10902
+                r = temp[1:]
+                results.append((modi_t,) + r)
+            else:
+                r = ()
+                for k in range(top_k):
+                    lidp = label_id_pred[i, k]
+                    lp = self.id2label[str(lidp)]
+                    p = label_id_prob[i, k]
+                    r += (lp, p)
+                results.append((t,) + r)
 
         ## [CLS] Passage [SEP]
         ## just keep model prediction for passage
