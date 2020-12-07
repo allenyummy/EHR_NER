@@ -7,7 +7,7 @@ import json
 import pandas as pd
 
 loop = 1
-data_dir = os.path.join("data", "qasl", "0817_8786_concat_num", f"loop_{loop}")
+data_dir = os.path.join("data", "simqasl", "0817_8786_concat_num", f"loop_{loop}")
 data_path = os.path.join(data_dir, "test.txt")
 out_path = os.path.join(data_dir, "test.xlsx")
 
