@@ -20,7 +20,7 @@ class BertQASLModel(BertPreTrainedModel):
             config.return_dict if hasattr(config, "return_dict") else False
         )
         self.class_weights = (
-            torch.FloatTensor(class_weights).cuda() if class_weights else None
+            torch.FloatTensor(class_weights) if class_weights else None
         )
         self.bert = BertModel(config, add_pooling_layer=False)
         self.dropout = Dropout(config.hidden_dropout_prob)
@@ -48,7 +48,7 @@ class BertQASLModel(BertPreTrainedModel):
 
         loss = None
         if labels is not None:
-            loss_fct = CrossEntropyLoss(weight=self.class_weights)
+            loss_fct = CrossEntropyLoss(weight=self.class_weights.cuda())
             # Only keep active parts of the loss
             if attention_mask is not None:
                 active_loss = attention_mask.view(-1) == 1
