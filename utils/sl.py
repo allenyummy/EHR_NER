@@ -333,7 +333,7 @@ def align_predictions(
     return preds_list, out_label_list
 
 
-def compute_metrics(p: EvalPrediction, label_map: Dict[int, str]) -> Dict:
+def compute_metrics(p: EvalPrediction) -> Dict:
     preds_list, out_label_list = align_predictions(p.predictions, p.label_ids)
     return {
         "accuracy_score": accuracy_score(out_label_list, preds_list),
