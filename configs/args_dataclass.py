@@ -125,6 +125,10 @@ class ModelArguments:
             "help": "Path to pretrained model or model identifier from huggingface.co/models"
         }
     )
+    with_bilstmcrf: bool = field(
+        metadata{
+            "help": "Whether to use bilstmcrf."
+    )
     config_name: Optional[str] = field(
         default=None,
         metadata={

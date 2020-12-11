@@ -41,7 +41,9 @@ from utils.sl import (
 from utils.qasl import NerAsQASLDataset
 from utils.mrc import NerAsMRCDataset
 from models.bert_sl import BertSLModel
+from models.bertbilstmcrf_sl import BertBiLSTMCRFSLModel
 from models.bert_qasl import BertQASLModel
+from models.bertbilstmcrf_qasl import BertBiLSTMCRFQASLModel
 from models.bert_mrc import BertMRCModel
 
 logging.config.fileConfig("configs/logging.conf")
@@ -161,12 +163,21 @@ def main():
 
         # --- Prepare model ---
         logger.info("======= Prepare model =======")
-        model = BertSLModel.from_pretrained(
-            model_args.model_name_or_path,
-            from_tf=bool(".ckpt" in model_args.model_name_or_path),
-            config=config,
-            cache_dir=model_args.cache_dir,
-        )
+        if model_args.with_bilstmcrf:
+            model = BertBiLSTMCRFSLModel.from_pretrained(
+                model_args.model_name_or_path,
+                from_tf=bool(".ckpt" in model_args.model_name_or_path),
+                config=config,
+                cache_dir=model_args.cache_dir,
+            )
+        else:
+            model = BertSLModel.from_pretrained(
+                model_args.model_name_or_path,
+                from_tf=bool(".ckpt" in model_args.model_name_or_path),
+                config=config,
+                cache_dir=model_args.cache_dir,
+            )
+
         model.resize_token_embeddings(len(tokenizer))
 
         # --- Prepare datasets ---
@@ -266,13 +277,22 @@ def main():
 
         # --- Prepare model ---
         logger.info("======= Prepare model =======")
-        model = BertQASLModel.from_pretrained(
-            model_args.model_name_or_path,
-            from_tf=bool(".ckpt" in model_args.model_name_or_path),
-            config=config,
-            class_weights=model_args.class_weights,
-            cache_dir=model_args.cache_dir,
-        )
+        if model_args.with_bilstmcrf:
+            model = BertBiLSTMCRFQASLModel.from_pretrained(
+                model_args.model_name_or_path,
+                from_tf=bool(".ckpt" in model_args.model_name_or_path),
+                config=config,
+                class_weights=model_args.class_weights,
+                cache_dir=model_args.cache_dir,
+            )
+        else:
+            model = BertQASLModel.from_pretrained(
+                model_args.model_name_or_path,
+                from_tf=bool(".ckpt" in model_args.model_name_or_path),
+                config=config,
+                class_weights=model_args.class_weights,
+                cache_dir=model_args.cache_dir,
+            )
         model.resize_token_embeddings(len(tokenizer))
 
         # --- Prepare datasets ---

@@ -8,6 +8,7 @@
     "overwrite_cache": false,
     "return_dict": true,
     "model_name_or_path": "hfl/chinese-bert-wwm",
+    "with_bilstmcrf": false,
     "cache_dir": "../pretrained_model/cache_from_huggingface_s3/hfl/chinese-bert-wwm/",
     "output_dir": "exp/",
     "num_train_epochs": 20,
