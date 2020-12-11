@@ -13,7 +13,7 @@ from models.crf_layer import CRF
 logger = logging.getLogger(__name__)
 
 
-class BertQASLModel(BertPreTrainedModel):
+class BertBiLSTMCRFQASLModel(BertPreTrainedModel):
     def __init__(self, config, class_weights=None):
         super().__init__(config)
         self.num_labels = config.num_labels

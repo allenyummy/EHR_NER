@@ -126,8 +126,9 @@ class ModelArguments:
         }
     )
     with_bilstmcrf: bool = field(
-        metadata{
+        metadata={
             "help": "Whether to use bilstmcrf."
+        }
     )
     config_name: Optional[str] = field(
         default=None,
