@@ -73,7 +73,7 @@ class BertQASLModel(BertPreTrainedModel):
             ## [CLS] and [SEP] do contribute to loss.
             ## [PAD] do not contribute to loss due to masking.
             loss = self.crf(
-                emissions=logits,
+                emissions=logits,     ## [TBD] need to be weighted.
                 tags=active_labels,
                 mask=attention_mask.type(torch.uint8),
             )
