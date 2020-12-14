@@ -50,9 +50,9 @@ logging.config.fileConfig("configs/logging.conf")
 logger = logging.getLogger(__name__)
 
 
-def compute_metrics(p: EvalPrediction) -> Dict:
-    predictions = p.predictions
-    label_ids = p.label_ids
+def align_predictions(
+    predictions: np.ndarray, label_ids: np.ndarray
+) -> Tuple[List[List[str]], List[List[str]]]:
 
     # --- Argmax to get best prediction ---
     preds = np.argmax(predictions, axis=2)
@@ -66,8 +66,11 @@ def compute_metrics(p: EvalPrediction) -> Dict:
             if label_ids[i, j] != nn.CrossEntropyLoss().ignore_index:
                 out_label_list[i].append(label_map[label_ids[i][j]])
                 preds_list[i].append(label_map[preds[i][j]])
+    return out_label_list, preds_list
 
-    # --- Calculate performance and return ---
+
+def compute_metrics(p: EvalPrediction) -> Dict:
+    out_label_list, preds_list = align_predictions(p.predictions, p.label_ids)
     return {
         "accuracy_score": accuracy_score(out_label_list, preds_list),
         "precision": precision_score(out_label_list, preds_list),
@@ -76,9 +79,9 @@ def compute_metrics(p: EvalPrediction) -> Dict:
     }
 
 
-def compute_metrics_crf(p: EvalPrediction) -> Dict:
-    predictions = p.predictions
-    label_ids = p.label_ids
+def align_predictions_crf(
+    predictions: np.ndarray, label_ids: np.ndarray
+) -> Tuple[List[List[str]], List[List[str]]]:
 
     # --- Construct Attention Mask from Labelid first ---
     # seqs:      [CLS], a, b, c, [SEP], [PAD], [PAD]
@@ -115,7 +118,9 @@ def compute_metrics_crf(p: EvalPrediction) -> Dict:
                 out_label_list[i].append(label_map[label_ids[i][j]])
                 preds_list[i].append(label_map[best_path[i][j]])
 
-    # --- Calculate performance and return ---
+
+def compute_metrics_crf(p: EvalPrediction) -> Dict:
+    out_label_list, preds_list = align_predictions_crf(p.predictions, p.label_ids)
     return {
         "accuracy_score": accuracy_score(out_label_list, preds_list),
         "precision": precision_score(out_label_list, preds_list),
@@ -125,6 +130,9 @@ def compute_metrics_crf(p: EvalPrediction) -> Dict:
 
 
 def main():
+    # --- global variable ---
+    global label_map
+    global trainer
 
     # --- Parse args ---
     logger.info("======= Parse args =======")
@@ -177,7 +185,6 @@ def main():
 
     # --- Prepare labels ---
     logger.info("======= Prepare labels =======")
-    global label_map
     labels, label_map, num_labels = get_labels(data_args.labels_path)
     logger.debug(f"label_map: {label_map}")
 
@@ -299,7 +306,6 @@ def main():
 
         # --- Initialize trainer from huggingface ---
         logger.info("======= Prepare trainer =======")
-        global trainer
         trainer = Trainer(
             model=model,
             args=training_args,
@@ -338,7 +344,11 @@ def main():
         # --- Predict test set ---
         if training_args.do_predict:
             predictions, label_ids, metrics = trainer.predict(test_dataset)
-            preds_list, _ = align_predictions(predictions, label_ids)
+            if model_args.with_bilstmcrf:
+                _, preds_list = align_predictions_crf(predictions, label_ids)
+            else:
+                _, preds_list = align_predictions(predictions, label_ids)
+
             test_predictions_file = os.path.join(
                 training_args.output_dir, "test_predictions.txt"
             )
@@ -417,7 +427,6 @@ def main():
 
         # --- Initialize trainer from huggingface ---
         logger.info("======= Prepare trainer =======")
-        global trainer
         trainer = Trainer(
             model=model,
             args=training_args,
