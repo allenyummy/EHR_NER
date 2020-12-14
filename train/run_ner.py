@@ -96,15 +96,13 @@ def align_predictions_crf(
     attention_masks = []
     for i in range(batch_size):
         locs = np.where(label_ids[i] == nn.CrossEntropyLoss().ignore_index)[0]
-        pad_loc = np.split(locs, np.cumsum(np.where(locs[1:] - locs[:-1] > 1)) + 1)[-1][
-            1:
-        ]
+        pad_loc = np.split(locs, np.cumsum(np.where(locs[1:] - locs[:-1] > 1)) + 1)[-1][1:]
         attention_mask = [1] * (len(label_ids[i]) - len(pad_loc)) + [0] * len(pad_loc)
         attention_masks.append(attention_mask)
 
     # --- Decode best path by CRF ---
-    emissions = torch.from_numpy(predictions)
-    attention_masks = torch.FloatTensor(attention_masks)
+    emissions = torch.from_numpy(predictions).cuda()
+    attention_masks = torch.FloatTensor(attention_masks).cuda()
     best_path = trainer.model.crf.decode(
         emissions=emissions, mask=attention_masks.type(torch.uint8)
     )
@@ -117,6 +115,7 @@ def align_predictions_crf(
             if label_ids[i, j] != nn.CrossEntropyLoss().ignore_index:
                 out_label_list[i].append(label_map[label_ids[i][j]])
                 preds_list[i].append(label_map[best_path[i][j]])
+    return out_label_list, preds_list
 
 
 def compute_metrics_crf(p: EvalPrediction) -> Dict:
