@@ -15,7 +15,6 @@
     "per_gpu_train_batch_size": 8,
     "learning_rate": 5e-5,
     "save_steps": 5000,
-    "save_total_limit": 5,
     "seed": 1,
     "do_train": true,
     "do_eval": true,
