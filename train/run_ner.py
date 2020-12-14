@@ -21,6 +21,7 @@ from transformers import (
     set_seed,
     EvalPrediction,
 )
+import torch
 from torch import nn
 
 # from torch.utils.tensorboard import SummaryWriter
@@ -31,12 +32,11 @@ from configs.args_dataclass import (
     MRCDataArguments,
     ModelArguments,
 )
+from utils.metrics_sl import accuracy_score, f1_score, precision_score, recall_score
 from utils.sl import (
     NerAsSLDataset,
     get_labels,
     write_predictions_to_file,
-    align_predictions,
-    compute_metrics,
 )
 from utils.qasl import NerAsQASLDataset
 from utils.mrc import NerAsMRCDataset
@@ -48,6 +48,80 @@ from models.bert_mrc import BertMRCModel
 
 logging.config.fileConfig("configs/logging.conf")
 logger = logging.getLogger(__name__)
+
+
+def compute_metrics(p: EvalPrediction) -> Dict:
+    predictions = p.predictions
+    label_ids = p.label_ids
+
+    # --- Argmax to get best prediction ---
+    preds = np.argmax(predictions, axis=2)
+
+    # --- Drop nn.CrossEntropyLoss().ignore_index ---
+    batch_size, seq_len = preds.shape
+    out_label_list = [[] for _ in range(batch_size)]
+    preds_list = [[] for _ in range(batch_size)]
+    for i in range(batch_size):
+        for j in range(seq_len):
+            if label_ids[i, j] != nn.CrossEntropyLoss().ignore_index:
+                out_label_list[i].append(label_map[label_ids[i][j]])
+                preds_list[i].append(label_map[preds[i][j]])
+
+    # --- Calculate performance and return ---
+    return {
+        "accuracy_score": accuracy_score(out_label_list, preds_list),
+        "precision": precision_score(out_label_list, preds_list),
+        "recall": recall_score(out_label_list, preds_list),
+        "f1": f1_score(out_label_list, preds_list),
+    }
+
+
+def compute_metrics_crf(p: EvalPrediction) -> Dict:
+    predictions = p.predictions
+    label_ids = p.label_ids
+
+    # --- Construct Attention Mask from Labelid first ---
+    # seqs:      [CLS], a, b, c, [SEP], [PAD], [PAD]
+    # label_ids:  -100, ., ., .,  -100,  -100,  -100
+    # mask:          1, 1, 1, 1,     1,     0,     0
+
+    # seqs:      [CLS], a, b, c, [SEP], d, e, f, [PAD], [PAD]
+    # label_ids:  -100, ., ., .,  -100, ., ., .,  -100,  -100
+    # mask:          1, 1, 1, 1,     1, 1, 1, 1,     0,     0
+
+    batch_size, seq_len, num_labels = predictions.shape
+    attention_masks = []
+    for i in range(batch_size):
+        locs = np.where(label_ids[i] == nn.CrossEntropyLoss().ignore_index)[0]
+        pad_loc = np.split(locs, np.cumsum(np.where(locs[1:] - locs[:-1] > 1)) + 1)[-1][
+            1:
+        ]
+        attention_mask = [1] * (len(label_ids[i]) - len(pad_loc)) + [0] * len(pad_loc)
+        attention_masks.append(attention_mask)
+
+    # --- Decode best path by CRF ---
+    emissions = torch.from_numpy(predictions)
+    attention_masks = torch.FloatTensor(attention_masks)
+    best_path = trainer.model.crf.decode(
+        emissions=emissions, mask=attention_masks.type(torch.uint8)
+    )
+
+    # --- Drop nn.CrossEntropyLoss().ignore_index ---
+    out_label_list = [[] for _ in range(batch_size)]
+    preds_list = [[] for _ in range(batch_size)]
+    for i in range(batch_size):
+        for j in range(seq_len):
+            if label_ids[i, j] != nn.CrossEntropyLoss().ignore_index:
+                out_label_list[i].append(label_map[label_ids[i][j]])
+                preds_list[i].append(label_map[best_path[i][j]])
+
+    # --- Calculate performance and return ---
+    return {
+        "accuracy_score": accuracy_score(out_label_list, preds_list),
+        "precision": precision_score(out_label_list, preds_list),
+        "recall": recall_score(out_label_list, preds_list),
+        "f1": f1_score(out_label_list, preds_list),
+    }
 
 
 def main():
@@ -103,6 +177,7 @@ def main():
 
     # --- Prepare labels ---
     logger.info("======= Prepare labels =======")
+    global label_map
     labels, label_map, num_labels = get_labels(data_args.labels_path)
     logger.debug(f"label_map: {label_map}")
 
@@ -224,12 +299,15 @@ def main():
 
         # --- Initialize trainer from huggingface ---
         logger.info("======= Prepare trainer =======")
+        global trainer
         trainer = Trainer(
             model=model,
             args=training_args,
             train_dataset=train_dataset,
             eval_dataset=eval_dataset,
-            compute_metrics=compute_metrics,
+            compute_metrics=compute_metrics_crf
+            if model_args.with_bilstmcrf
+            else compute_metrics,
             # tb_writer=SummaryWriter(training_args.logging_dir),
             # optimizers
         )
@@ -339,12 +417,15 @@ def main():
 
         # --- Initialize trainer from huggingface ---
         logger.info("======= Prepare trainer =======")
+        global trainer
         trainer = Trainer(
             model=model,
             args=training_args,
             train_dataset=train_dataset,
             eval_dataset=eval_dataset,
-            compute_metrics=compute_metrics,
+            compute_metrics=compute_metrics_crf
+            if model_args.with_bilstmcrf
+            else compute_metrics,
             # tb_writer=SummaryWriter(training_args.logging_dir),
             # optimizers
         )
