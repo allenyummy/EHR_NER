@@ -13,14 +13,14 @@ logger = logging.getLogger(__name__)
 
 @pytest.fixture(scope="function")
 def model():
-    model_dir = "trained_model/0817_8786_concat_num/bert_sl/2020-09-02-00@hfl@chinese-bert-wwm@CE_S-512_B-4_E-100_LR-5e-5_SD-1/"
-    BertSL = BertSLPredictor(model_dir)
-    return BertSL
+    model_dir = "trained_model/0817_8786_concat_num/sl/2020-12-14-09@hfl@chinese-bert-wwm@BiLSTMCRF_S-512_B-8_E-20_LR-5e-5_SD-1"
+    model = BertSLPredictor(model_dir=model_dir, with_bilstmcrf=True)
+    return model
 
 
 def predict(model, passage):
     res = model.predict(passage)
-    token, label, prob = zip(*res)
+    token, label = zip(*res)
     seq = [(t, l) for t, l in zip(token, label)]
     results = EntityFromList(seq=seq, scheme=IOB2).entities
     return results
