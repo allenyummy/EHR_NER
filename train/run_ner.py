@@ -213,29 +213,8 @@ def main():
 
     # --- Add tokens that are might not in vocab.txt ---
     logger.info("======= Add tokens that are might not in vocab.txt =======")
-    add_tokens = [
-        "瘜",
-        "皰",
-        "搐",
-        "齲",
-        "蛀",
-        "髕",
-        "闌",
-        "疝",
-        "嚥",
-        "簍",
-        "廔",
-        "顳",
-        "溼",
-        "髖",
-        "膈",
-        "搔",
-        "攣",
-        "仟",
-        "鐙",
-        "蹠",
-        "橈",
-    ]
+    add_tokens = ["瘜","皰","搐","齲","蛀","髕","闌","疝","嚥","簍",
+                  "廔","顳","溼","髖","膈","搔","攣","仟","鐙","蹠","橈"]
     tokenizer.add_tokens(add_tokens)
     logger.debug(f"Add tokens: {add_tokens}")
 
@@ -245,6 +224,7 @@ def main():
         # --- Prepare model ---
         logger.info("======= Prepare model =======")
         if model_args.with_bilstmcrf:
+            logger.info("Init BertBiLSTMCRFSLModel")
             model = BertBiLSTMCRFSLModel.from_pretrained(
                 model_args.model_name_or_path,
                 from_tf=bool(".ckpt" in model_args.model_name_or_path),
@@ -252,6 +232,7 @@ def main():
                 cache_dir=model_args.cache_dir,
             )
         else:
+            logger.info("Init BertBSLModel")
             model = BertSLModel.from_pretrained(
                 model_args.model_name_or_path,
                 from_tf=bool(".ckpt" in model_args.model_name_or_path),
@@ -365,19 +346,20 @@ def main():
         # --- Prepare model ---
         logger.info("======= Prepare model =======")
         if model_args.with_bilstmcrf:
+            logger.info("Init BertBiLSTMCRFQASLModel")
             model = BertBiLSTMCRFQASLModel.from_pretrained(
                 model_args.model_name_or_path,
                 from_tf=bool(".ckpt" in model_args.model_name_or_path),
                 config=config,
-                class_weights=model_args.class_weights,
                 cache_dir=model_args.cache_dir,
             )
         else:
+            logger.info("Init BertQASLModel")
             model = BertQASLModel.from_pretrained(
                 model_args.model_name_or_path,
                 from_tf=bool(".ckpt" in model_args.model_name_or_path),
                 config=config,
-                class_weights=model_args.class_weights,
+                class_weights=model_args.class_weights,  ## knowhow class weights
                 cache_dir=model_args.cache_dir,
             )
         model.resize_token_embeddings(len(tokenizer))
