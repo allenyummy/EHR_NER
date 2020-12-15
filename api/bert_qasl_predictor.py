@@ -75,7 +75,7 @@ class BertQASLPredictor:
 
 if __name__ == "__main__":
 
-    model_dir = "trained_model/0817_8786_concat_num/bert_qasl/2020-11-11-00@hfl@chinese-bert-wwm@weightedCE-0.11-1-0.16_S-512_B-4_E-5_LR-5e-5_SD-1/"
+    model_dir = "trained_model/0817_8786_concat_num/qasl/2020-11-11-00@hfl@chinese-bert-wwm@weightedCE-0.11-1-0.16_S-512_B-4_E-5_LR-5e-5_SD-1/"
     model = BertQASLPredictor(model_dir=model_dir)
     passage = "病患於109年10月5日入院急診。"
     passage = "病患於民國108年10月5日至本院入院急診，經手術之後，民國108年10月7日出院。"

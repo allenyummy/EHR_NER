@@ -1,6 +1,6 @@
 # encoding = utf-8
 # Author: Yu-Lun Chiang
-# Description: API of prediction for bert_sl and bertbilkstmcrf_sl
+# Description: API of prediction for bert_sl and bertbilstmcrf_sl
 
 import logging
 import os

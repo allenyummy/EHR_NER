@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 @pytest.fixture(scope="function")
 def model():
-    model_dir = "trained_model/0817_8786_concat_num/bert_qasl/2020-11-11-00@hfl@chinese-bert-wwm@weightedCE-0.11-1-0.16_S-512_B-4_E-5_LR-5e-5_SD-1/"
+    model_dir = "trained_model/0817_8786_concat_num/qasl/2020-11-11-00@hfl@chinese-bert-wwm@weightedCE-0.11-1-0.16_S-512_B-4_E-5_LR-5e-5_SD-1/"
     BertQASL = BertQASLPredictor(model_dir)
     return BertQASL
 
