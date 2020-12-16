@@ -20,7 +20,7 @@ class BertBiLSTMCRFQASLModel(BertPreTrainedModel):
         self.return_dict = (
             config.return_dict if hasattr(config, "return_dict") else False
         )
-        self.class_weights = torch.FloatTensor(class_weights) if class_weights else None
+        self.class_weights = torch.FloatTensor(class_weights) if class_weights else torch.FloatTensor([1.0, 1.0, 1.0])
         self.bert = BertModel(config, add_pooling_layer=False)
         self.dropout = Dropout(config.hidden_dropout_prob)
         self.lstm = LSTM(
@@ -73,7 +73,7 @@ class BertBiLSTMCRFQASLModel(BertPreTrainedModel):
             ## [CLS] and [SEP] do contribute to loss.
             ## [PAD] do not contribute to loss due to masking.
             loss = self.crf(
-                emissions=logits,     ## [TBD] need to be weighted.
+                emissions=logits * self.class_weights.cuda(),     ## [TBD] need to be weighted.
                 tags=active_labels,
                 mask=attention_mask.type(torch.uint8),
             )

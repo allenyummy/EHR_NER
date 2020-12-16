@@ -351,6 +351,7 @@ def main():
                 model_args.model_name_or_path,
                 from_tf=bool(".ckpt" in model_args.model_name_or_path),
                 config=config,
+                class_weights=model_args.class_weights,  ## knowhow class weights
                 cache_dir=model_args.cache_dir,
             )
         else:
