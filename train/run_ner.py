@@ -104,7 +104,7 @@ def align_predictions_crf(
     emissions = torch.from_numpy(predictions).cuda()
     attention_masks = torch.FloatTensor(attention_masks).cuda()
     best_path = trainer.model.crf.decode(
-        emissions=emissions, mask=attention_masks.type(torch.uint8)
+        emissions=emissions*class_weights.cuda(), mask=attention_masks.type(torch.uint8)
     )
 
     # --- Drop nn.CrossEntropyLoss().ignore_index ---
@@ -131,7 +131,8 @@ def compute_metrics_crf(p: EvalPrediction) -> Dict:
 def main():
     # --- global variable ---
     global label_map
-    global trainer
+    global trainer       # for align_predictions_crf
+    global class_weights # for align_predictions_crf
 
     # --- Parse args ---
     logger.info("======= Parse args =======")
@@ -342,6 +343,10 @@ def main():
                         write_predictions_to_file(writer, f, preds_list)
 
     elif sys.argv[1] == "qasl":
+
+        # --- for align_prediction_crf ---
+        class_weights = model_args.class_weights if model_args.class_weights else [1.0, 1.0, 1.0]
+        class_weights = torch.FloatTensor(class_weights)
 
         # --- Prepare model ---
         logger.info("======= Prepare model =======")
