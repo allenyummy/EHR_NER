@@ -183,3 +183,27 @@ def testcase_nineteen(model, query, testcase19):
     passage = testcase19["passage"]
     results_top1, results_top2, results_top2_prune = predict(model, query, passage)
     logging(passage, results_top1, results_top2, results_top2_prune)
+
+
+def testcase_testpid75(model, query, testcase_testpid75):
+    passage = testcase_testpid75["passage"]
+    results_top1, results_top2, results_top2_prune = predict(model, query, passage)
+    logging(passage, results_top1, results_top2, results_top2_prune)
+
+
+def testcase_testpid81(model, query, testcase_testpid81):
+    passage = testcase_testpid81["passage"]
+    results_top1, results_top2, results_top2_prune = predict(model, query, passage)
+    logging(passage, results_top1, results_top2, results_top2_prune)
+
+
+def testcase_testpid97(model, query, testcase_testpid97):
+    passage = testcase_testpid97["passage"]
+    results_top1, results_top2, results_top2_prune = predict(model, query, passage)
+    logging(passage, results_top1, results_top2, results_top2_prune)
+
+
+def testcase_testpid100(model, query, testcase_testpid100):
+    passage = testcase_testpid100["passage"]
+    results_top1, results_top2, results_top2_prune = predict(model, query, passage)
+    logging(passage, results_top1, results_top2, results_top2_prune)

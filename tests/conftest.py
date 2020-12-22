@@ -120,3 +120,23 @@ def testcase18():
 def testcase19():
     passage = "病患於1090810,1090811急診就診,1090811入院並接受骨折復位鋼針固定手術,1090813出院,共計住院3天,1090819門診追蹤治療。預計骨癒合約需三個月,專人看護一個月,需休養及吊帶使用並避免手臂肩膀活動三個月,證明用。(以下空白)"
     return {"passage": passage}
+
+@pytest.fixture(scope="session")
+def testcase_testpid75():
+    passage = "病患因上述診斷於民國109年03月25日至本院急診就醫,於當日入住負壓病房接受隔離及治療,於民國109年03月28日轉至新屋分院後續隔離病房照護,民國109年05月11日於新屋分院出院,並於於民國109年05月19日至本院感染科門診回診追蹤。[以下空白]"
+    return {"passage": passage}
+
+@pytest.fixture(scope="session")
+def testcase_testpid81():
+    passage = "病人因上述原因,109年05月22日至急診室就醫,當天入院至加護病房,109年05月23日行剖腹清創併引流手術,109年05月24日轉一般病房,109年06月02日出院,不宜負重宜休養1個月,續門診追蹤。[以下空白]"
+    return {"passage": passage}
+
+@pytest.fixture(scope="session")
+def testcase_testpid97():
+    passage = "109年5月19日於緊急醫療區治療壹次。109年5月19日入門診後轉住院治療,於109年5月22日出院,共計住院治療肆日。(以下空白)"
+    return {"passage": passage}
+
+@pytest.fixture(scope="session")
+def testcase_testpid100():
+    passage = "病患因上述疾病,入院時間:民國109年03月09日,出院時間:民國109年04月06日,共29天。接受第12胸椎第一薦椎椎弓切除及腫瘤切除與腰薦椎椎弓及椎間盤切除+人工骨++人工椎間護架融合手術手術日期:民國109年03月10日。因病情需要轉入加護病房日期:109年03月10日~民國109年03月13日,加護病房共4天。三個月內需專人照護。(以下空白)"
+    return {"passage": passage}

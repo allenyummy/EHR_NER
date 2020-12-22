@@ -145,3 +145,27 @@ def testcase_nineteen(model, testcase19):
     passage = testcase19["passage"]
     results = predict(model, passage)
     logging(passage, results)
+
+
+def testcase_testpid75(model, testcase_testpid75):
+    passage = testcase_testpid75["passage"]
+    results = predict(model, passage)
+    logging(passage, results)
+
+
+def testcase_testpid81(model, testcase_testpid81):
+    passage = testcase_testpid81["passage"]
+    results = predict(model, passage)
+    logging(passage, results)
+
+
+def testcase_testpid97(model, testcase_testpid97):
+    passage = testcase_testpid97["passage"]
+    results = predict(model, passage)
+    logging(passage, results)
+
+
+def testcase_testpid100(model, testcase_testpid100):
+    passage = testcase_testpid100["passage"]
+    results = predict(model, passage)
+    logging(passage, results)
