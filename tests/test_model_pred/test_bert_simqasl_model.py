@@ -17,8 +17,8 @@ logger = logging.getLogger(__name__)
 @pytest.fixture(scope="function")
 def model():
     model_dir = "trained_model/0817_8786_concat_num/simqasl/2020-11-20-00@hfl@chinese-bert-wwm@weightedCE-0.11-1-0.16_S-512_B-8_E-20_LR-5e-5_SD-1/"
-    BertSimQASL = BertQASLPredictor(model_dir)
-    return BertSimQASL
+    model = BertQASLPredictor(model_dir)
+    return model
 
 
 @pytest.fixture(scope="function")
