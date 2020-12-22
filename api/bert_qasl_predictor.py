@@ -1,6 +1,6 @@
 # encoding = utf-8
 # Author: Yu-Lun Chiang
-# Description: API of prediction from bert_qasl
+# Description: API of prediction for bert_qasl and bertbilstmcrf_qasl
 
 import logging
 import os
@@ -9,13 +9,16 @@ import torch
 import torch.nn.functional as F
 from transformers import BertTokenizer
 from models.bert_qasl import BertQASLModel
+from models.bertbilstmcrf_qasl import BertBiLSTMCRFQASLModel
 
 logger = logging.getLogger(__name__)
 
 
 class BertQASLPredictor:
-    def __init__(self, model_dir: str):
+    def __init__(self, model_dir: str, with_bilstmcrf: bool = False):
         self.model_dir = model_dir
+        self.with_bilstmcrf = with_bilstmcrf
+        self.class_weights = torch.FloatTensor([0.11, 1, 0.16])
         self.config, self.tokenizer, self.model = self._load()
         self.id2label = self.config["id2label"]
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -25,20 +28,34 @@ class BertQASLPredictor:
     def predict(
         self, query_tag: str = "", query: str = "", passage: str = "", top_k: int = 1
     ):
+        # --- Preprocess input ---
         inputs = self.tokenizer(
             query, passage, truncation=True, max_length=512, return_tensors="pt"
         )
-        with torch.no_grad():
-            logits = self.model(**inputs).logits
-        logits = F.softmax(logits, dim=2)
-        # label_id_pred = torch.argmax(logits, dim=2).detach().cpu().numpy().tolist()[0]
-        pred = torch.topk(logits, k=top_k, dim=2)
-        label_id_pred = pred.indices.detach().cpu().numpy()[0]
-        label_id_prob = pred.values.detach().cpu().numpy()[0]
         tokens = self.tokenizer.convert_ids_to_tokens(
             inputs.input_ids.cpu().detach().numpy().tolist()[0]
         )
+        
+        # --- Predict and Generate logits ---
+        with torch.no_grad():
+            logits = self.model(**inputs).logits
+        
+        # --- Decode by CRF ---
+        if self.with_bilstmcrf:
+            label_id_pred = self.model.crf.decode(emissions=logits*self.class_weights)
+            # confidence = self.model.crf(emissions=logits, tags=torch.tensor(label_id_pred))
+            label_id_pred = label_id_pred[0]
 
+        # --- Decode by Softmax and Argmax ---
+        else:
+            logits = F.softmax(logits, dim=2)
+            # label_id_pred = torch.argmax(logits, dim=2).detach().cpu().numpy().tolist()[0]
+            pred = torch.topk(logits, k=top_k, dim=2)
+            label_id_pred = pred.indices.detach().cpu().numpy()[0]
+            label_id_prob = pred.values.detach().cpu().numpy()[0]
+        
+
+        # --- Postprocess ---
         results = list()
         for i, t in enumerate(tokens):
             if "##" in t:
@@ -48,19 +65,23 @@ class BertQASLPredictor:
                 results.append((modi_t,) + r)
             else:
                 r = ()
-                for k in range(top_k):
-                    lidp = label_id_pred[i, k]
+                if self.with_bilstmcrf:
+                    lidp = label_id_pred[i]
                     lp = self.id2label[str(lidp)]
                     lp_refine = f"{lp}-{query_tag}" if lp != "O" else lp
-                    p = label_id_prob[i, k]
-                    r += (lp_refine, p)
+                    r += (lp_refine,)
+                else:
+                    for k in range(top_k):
+                        lidp = label_id_pred[i, k]
+                        lp = self.id2label[str(lidp)]
+                        lp_refine = f"{lp}-{query_tag}" if lp != "O" else lp
+                        p = label_id_prob[i, k]
+                        r += (lp_refine, p)
                 results.append((t,) + r)
 
-        ## [CLS] Query [SEP] Passage [SEP]
-        ## just keep model prediction for passage.
+        # --- Drop [CLS], Query, [SEP], [SEP]
         first_sep_idx = tokens.index("[SEP]")
         results = results[first_sep_idx + 1 : -1]
-
         return results
 
     def _load(self):
@@ -69,14 +90,23 @@ class BertQASLPredictor:
             raise ValueError(f"{self.model_dir} must contain config.json.")
         config = json.load(open(config_path))
         tokenizer = BertTokenizer.from_pretrained(self.model_dir)
-        model = BertQASLModel.from_pretrained(self.model_dir, return_dict=True)
+        if self.with_bilstmcrf:
+            model = BertBiLSTMCRFQASLModel.from_pretrained(
+                self.model_dir, return_dict=True
+            )
+        else:
+            model = BertQASLModel.from_pretrained(self.model_dir, return_dict=True)
         return config, tokenizer, model
 
 
 if __name__ == "__main__":
 
     model_dir = "trained_model/0817_8786_concat_num/qasl/2020-11-11-00@hfl@chinese-bert-wwm@weightedCE-0.11-1-0.16_S-512_B-4_E-5_LR-5e-5_SD-1/"
-    model = BertQASLPredictor(model_dir=model_dir)
+    model_dir = "trained_model/0817_8786_concat_num/simqasl/2020-12-17-07@hfl@chinese-bert-wwm@wBiLSTMCRF-0.11-1-0.16_S-512_B-8_E-20_LR-5e-5_SD-1"
+    with_bilstmcrf = False
+    if "BiLSTMCRF" in model_dir:
+        with_bilstmcrf = True
+    model = BertQASLPredictor(model_dir=model_dir, with_bilstmcrf=with_bilstmcrf)
     passage = "病患於109年10月5日入院急診。"
     passage = "病患於民國108年10月5日至本院入院急診，經手術之後，民國108年10月7日出院。"
     passage = "患者於民國109年01月20日08時20分急診就醫，經縫合手術治療後於民國109年01月20日10時50分出院。"
@@ -95,7 +125,7 @@ if __name__ == "__main__":
     passage = "患者在108年12月25日07時42分至本院急診治療，經治療後，在108年12月25日住院，至108年12月27日出院。患者在108年12月30日至本院門診就醫治療。(以下空白)" 
     passage = "病患因上述原因，於2020年4月26日住院，4月27日接受人工血管置放手術，4月28日接受靜脈注射全身性化學治療，4月29日出院，宜於門診持續追蹤治療--以下空白--"
 
-    with open("configs/qasl_query.json", "r") as f:
+    with open("configs/simqasl_query.json", "r") as f:
         qasl_query = json.load(f)
 
     import sys
@@ -105,19 +135,20 @@ if __name__ == "__main__":
     print(query)
     print(passage)
     results = model.predict(q_tag, query, passage, 3)
-    import pandas as pd
+    print (results)
+    # import pandas as pd
 
-    pd.set_option("display.max_rows", 200)
-    df = pd.DataFrame(
-        results,
-        columns=[
-            "Token",
-            "Top1_label",
-            "Top1_prob",
-            "Top2_label",
-            "Top2_prob",
-            "Top3_label",
-            "Top3_prob",
-        ],
-    )
-    print(df)
+    # pd.set_option("display.max_rows", 200)
+    # df = pd.DataFrame(
+    #     results,
+    #     columns=[
+    #         "Token",
+    #         "Top1_label",
+    #         "Top1_prob",
+    #         "Top2_label",
+    #         "Top2_prob",
+    #         "Top3_label",
+    #         "Top3_prob",
+    #     ],
+    # )
+    # print(df)
