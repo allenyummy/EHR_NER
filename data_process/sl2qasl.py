@@ -1,6 +1,6 @@
 # encoding=utf-8
-# Author: Allen.Chiang
-# Description: transform sequence labeling to machine reading comprehension
+# Author: Yu-Lun Chiang
+# Description: transform sequence labeling to QA-based sequence labeling
 
 import os
 import json
