@@ -4,12 +4,13 @@
 
 import os
 import json
+import datetime
 from tqdm import tqdm
 import pandas as pd
 
 
 ref_data_path = os.path.join(
-    "data", "simqasl", "0817_8786_concat_num", f"loop_1", "dev.txt"
+    "data", "final", "dev.json"
 )
 in_data_path = os.path.join(
     "data",
@@ -20,18 +21,17 @@ in_data_path = os.path.join(
 )
 out_data_path = os.path.join(
     "data",
-    "simqasl",
-    "0817_8786_concat_num",
+    "final",
     "loop_1_checked",
-    "dev_checked.txt",
+    "dev_checked.json",
 )
 
 
 with open(ref_data_path, "r", encoding="utf-8") as f:
-    simqasl_data = json.load(f)
-version = simqasl_data["version"]
-query = simqasl_data["query"]
-data = simqasl_data["data"]
+    in_data = json.load(f)
+in_data["version"] = in_data["version"] + "_checked"
+in_data["time"] = datetime.datetime.today().strftime("%Y/%m/%d_%H:%M:%S")
+data = in_data["data"]
 
 loop_1_checked = pd.read_excel(in_data_path)
 cols = loop_1_checked.columns.tolist()[1:]  ## drop passage
@@ -84,8 +84,8 @@ for i, d in enumerate(data):
                 if "[m]" in each_ans:
                     d["checked_model_pred"].append(
                         {
+                            "type": col,
                             "text": ans_text,
-                            "label": col,
                             "start_pos": start_pos,
                             "end_pos": end_pos,
                         }
@@ -94,8 +94,8 @@ for i, d in enumerate(data):
                 elif "[k]" in each_ans:
                     d["checked_karen"].append(
                         {
+                            "type": col,
                             "text": ans_text,
-                            "label": col,
                             "start_pos": start_pos,
                             "end_pos": end_pos,
                         }
@@ -104,8 +104,8 @@ for i, d in enumerate(data):
                 else:  ## None, [o], [ok]
                     d["checked_origin_ans"].append(
                         {
+                            "type": col,
                             "text": ans_text,
-                            "label": col,
                             "start_pos": start_pos,
                             "end_pos": end_pos,
                         }
@@ -155,7 +155,7 @@ for i, d in enumerate(data):
             seen_ans.add(b)
 
     for a in sorted(
-        before_flat_ne_answers, key=lambda x: (x["start_pos"], x["end_pos"], x["label"])
+        before_flat_ne_answers, key=lambda x: (x["start_pos"], x["end_pos"], x["type"])
     ):
         if not flat_ne_answers:
             flat_ne_answers.append(a)
@@ -165,8 +165,8 @@ for i, d in enumerate(data):
                 a["start_pos"] == temp_ans["start_pos"]
                 and a["end_pos"] == temp_ans["end_pos"]
             ):
-                label_a = a["label"]
-                label_temp = temp_ans["label"]
+                label_a = a["type"]
+                label_temp = temp_ans["type"]
                 passage_tokens_string = " ".join(passage_tokens)
 
                 print(f"{pid}, {passage_tokens_string}")
@@ -186,7 +186,7 @@ for i, d in enumerate(data):
                 flat_ne_answers.append(a)
 
     flat_ne_answers = sorted(
-        flat_ne_answers, key=lambda x: (x["start_pos"], x["end_pos"], x["label"])
+        flat_ne_answers, key=lambda x: (x["start_pos"], x["end_pos"], x["type"])
     )
     d["flat_ne_answers"] = flat_ne_answers
 
@@ -200,12 +200,15 @@ for i, d in enumerate(data):
             nested_ne_answers.append(a)
             seen_ans.add(b)
     nested_ne_answers = sorted(
-        nested_ne_answers, key=lambda x: (x["start_pos"], x["end_pos"], x["label"])
+        nested_ne_answers, key=lambda x: (x["start_pos"], x["end_pos"], x["type"])
     )
     d["nested_ne_answers"] = nested_ne_answers
 
-    del d["answers"]
-    del d["model_pred_top2"]
+    diff_answers = nested_ne_answers.copy()
+    for i in flat_ne_answers:
+        diff_answers.remove(i)
+    d["diff_answers"] = diff_answers
+
     del d["concat_answers"]
     del d["checked_origin_ans"]
     del d["checked_model_pred"]
@@ -213,5 +216,5 @@ for i, d in enumerate(data):
 
 
 with open(out_data_path, "w", encoding="utf-8") as fout:
-    out = json.dumps(simqasl_data, indent=4, ensure_ascii=False)
+    out = json.dumps(in_data, indent=4, ensure_ascii=False)
     fout.write(out)

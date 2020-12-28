@@ -142,7 +142,7 @@ def read_examples_from_file(data_path: str, query: Optional[Dict[str, str]]=None
 
         # --- QASL task
         else:
-            anss = eachData["flat_ne_answers"] ## + eachData["nested_ne_answers"]
+            anss = eachData["nested_ne_answers"]
             for qid, (ner_type, question) in enumerate(zip(query.keys(), query.values())):
                 example = InputExample(
                     id=f"{pid}-{qid}",
