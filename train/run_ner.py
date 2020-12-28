@@ -33,18 +33,15 @@ from configs.args_dataclass import (
     ModelArguments,
 )
 from utils.metrics_sl import accuracy_score, f1_score, precision_score, recall_score
+from utils.feaproducer import NerDataset
 from utils.sl import (
-    NerAsSLDataset,
     get_labels,
     write_predictions_to_file,
 )
-from utils.qasl import NerAsQASLDataset
-from utils.mrc import NerAsMRCDataset
 from models.bert_sl import BertSLModel
 from models.bertbilstmcrf_sl import BertBiLSTMCRFSLModel
 from models.bert_qasl import BertQASLModel
 from models.bertbilstmcrf_qasl import BertBiLSTMCRFQASLModel
-from models.bert_mrc import BertMRCModel
 
 logging.config.fileConfig("configs/logging.conf")
 logger = logging.getLogger(__name__)
@@ -138,20 +135,24 @@ def main():
     logger.info("======= Parse args =======")
     if len(sys.argv) != 2:
         raise ValueError(
-            "Please enter the command: PYTHONPATH=./ python train/run_ner.py [sl, qasl, or mrc]"
+            "Please enter the command: PYTHONPATH=./ python train/run_ner.py [sl, qasl, simqasl, or mrc]"
         )
-
-    if sys.argv[1] == "sl":
+    
+    # --- Check task ---
+    task = sys.argv[1]
+    if task == "sl":
         logger.info("======= Traditional Sequence Labeling =======")
         parser = HfArgumentParser(
             (DataArguments, SLDataArguments, ModelArguments, TrainingArguments)
         )
-    elif sys.argv[1] == "qasl":
+        query_path = None
+    elif task in ["qasl", "simqasl"]:
         logger.info("======= QA Sequence Labeling =======")
         parser = HfArgumentParser(
             (DataArguments, QASLDataArguments, ModelArguments, TrainingArguments)
         )
-    elif sys.argv[1] == "mrc":
+        query_path = task_args.query_path
+    elif task == "mrc":
         logger.info("======= Machine Reading Comprehension Sequence Labeling =======")
         parser = HfArgumentParser(
             (DataArguments, MRCDataArguments, ModelArguments, TrainingArguments)
@@ -219,8 +220,56 @@ def main():
     tokenizer.add_tokens(add_tokens)
     logger.debug(f"Add tokens: {add_tokens}")
 
+    # --- Prepare datasets ---
+    logger.info("======= Prepare dataset =======")
+    train_dataset = (
+        NerDataset(
+            task=task,
+            data_dir=data_args.data_dir,
+            filename=data_args.train_filename,
+            labels=labels,
+            tokenizer=tokenizer,
+            model_type=config.model_type,
+            max_seq_length=task_args.max_seq_length,
+            query_path=query_path,
+            overwrite_cache=data_args.overwrite_cache,
+        )
+        if training_args.do_train or training_args.do_eval
+        else None
+    )
+    eval_dataset = (
+        NerDataset(
+            task=task,
+            data_dir=data_args.data_dir,
+            filename=data_args.dev_filename,
+            labels=labels,
+            tokenizer=tokenizer,
+            model_type=config.model_type,
+            max_seq_length=task_args.max_seq_length,
+            query_path=query_path,
+            overwrite_cache=data_args.overwrite_cache,
+        )
+        if training_args.do_train or training_args.do_eval
+        else None
+    )
+    test_dataset = (
+        NerDataset(
+            task=task,
+            data_dir=data_args.data_dir,
+            filename=data_args.test_filename,
+            labels=labels,
+            tokenizer=tokenizer,
+            model_type=config.model_type,
+            max_seq_length=task_args.max_seq_length,
+            query_path=query_path,
+            overwrite_cache=data_args.overwrite_cache,
+        )
+        if training_args.do_eval or training_args.do_predict
+        else None
+    )
+
     # --- NER as Sequence Labeling Task ---
-    if sys.argv[1] == "sl":
+    if task == "sl":
 
         # --- Prepare model ---
         logger.info("======= Prepare model =======")
@@ -243,106 +292,7 @@ def main():
 
         model.resize_token_embeddings(len(tokenizer))
 
-        # --- Prepare datasets ---
-        logger.info("======= Prepare dataset =======")
-        train_dataset = (
-            NerAsSLDataset(
-                data_dir=data_args.data_dir,
-                filename=data_args.train_filename,
-                tokenizer=tokenizer,
-                labels=labels,
-                model_type=config.model_type,
-                max_seq_length=task_args.max_seq_length,
-                overwrite_cache=data_args.overwrite_cache,
-            )
-            if training_args.do_train or training_args.do_eval
-            else None
-        )
-        eval_dataset = (
-            NerAsSLDataset(
-                data_dir=data_args.data_dir,
-                filename=data_args.dev_filename,
-                tokenizer=tokenizer,
-                labels=labels,
-                model_type=config.model_type,
-                max_seq_length=task_args.max_seq_length,
-                overwrite_cache=data_args.overwrite_cache,
-            )
-            if training_args.do_train or training_args.do_eval
-            else None
-        )
-        test_dataset = (
-            NerAsSLDataset(
-                data_dir=data_args.data_dir,
-                filename=data_args.test_filename,
-                tokenizer=tokenizer,
-                labels=labels,
-                model_type=config.model_type,
-                max_seq_length=task_args.max_seq_length,
-                overwrite_cache=data_args.overwrite_cache,
-            )
-            if training_args.do_eval or training_args.do_predict
-            else None
-        )
-
-        # --- Initialize trainer from huggingface ---
-        logger.info("======= Prepare trainer =======")
-        trainer = Trainer(
-            model=model,
-            args=training_args,
-            train_dataset=train_dataset,
-            eval_dataset=eval_dataset,
-            compute_metrics=compute_metrics_crf
-            if model_args.with_bilstmcrf
-            else compute_metrics,
-            # tb_writer=SummaryWriter(training_args.logging_dir),
-            # optimizers
-        )
-
-        # --- Train ---
-        if training_args.do_train:
-            trainer.train()
-            trainer.save_model()
-            if trainer.is_world_master():
-                tokenizer.save_pretrained(training_args.output_dir)
-
-        # --- Evaluate all set ---
-        if training_args.do_eval:
-            for dataset in [train_dataset, eval_dataset, test_dataset]:
-                metrics = trainer.evaluate(dataset)
-                evaluation_results_file = os.path.join(
-                    training_args.output_dir, "evaluation_results.txt"
-                )
-                if trainer.is_world_master():
-                    with open(evaluation_results_file, "a", encoding="utf-8") as writer:
-                        logger.info(f"Eval results of {dataset.set} set")
-                        writer.write(f"Eval results of {dataset.set} set\n")
-                        for key, value in metrics.items():
-                            logger.info("  %s = %s", key, value)
-                            writer.write("%s = %s\n" % (key, value))
-                        writer.write("\n")
-
-        # --- Predict test set ---
-        if training_args.do_predict:
-            predictions, label_ids, metrics = trainer.predict(test_dataset)
-            if model_args.with_bilstmcrf:
-                _, preds_list = align_predictions_crf(predictions, label_ids)
-            else:
-                _, preds_list = align_predictions(predictions, label_ids)
-
-            test_predictions_file = os.path.join(
-                training_args.output_dir, "test_predictions.txt"
-            )
-            if trainer.is_world_master():
-                with open(test_predictions_file, "w", encoding="utf-8") as writer:
-                    with open(
-                        os.path.join(data_args.data_dir, data_args.test_filename),
-                        "r",
-                        encoding="utf-8",
-                    ) as f:
-                        write_predictions_to_file(writer, f, preds_list)
-
-    elif sys.argv[1] == "qasl":
+    elif task in ["qasl", "simqasl"]:
 
         # --- for align_prediction_crf ---
         class_weights = model_args.class_weights if model_args.class_weights else [1.0, 1.0, 1.0]
@@ -370,156 +320,135 @@ def main():
             )
         model.resize_token_embeddings(len(tokenizer))
 
-        # --- Prepare datasets ---
-        logger.info("======= Prepare dataset =======")
-        train_dataset = (
-            NerAsQASLDataset(
-                data_dir=data_args.data_dir,
-                filename=data_args.train_filename,
-                tokenizer=tokenizer,
-                labels=labels,
-                model_type=config.model_type,
-                max_seq_length=task_args.max_seq_length,
-                overwrite_cache=data_args.overwrite_cache,
-            )
-            if training_args.do_train or training_args.do_eval
-            else None
-        )
-        eval_dataset = (
-            NerAsQASLDataset(
-                data_dir=data_args.data_dir,
-                filename=data_args.dev_filename,
-                tokenizer=tokenizer,
-                labels=labels,
-                model_type=config.model_type,
-                max_seq_length=task_args.max_seq_length,
-                overwrite_cache=data_args.overwrite_cache,
-            )
-            if training_args.do_train or training_args.do_eval
-            else None
-        )
-        test_dataset = (
-            NerAsQASLDataset(
-                data_dir=data_args.data_dir,
-                filename=data_args.test_filename,
-                tokenizer=tokenizer,
-                labels=labels,
-                model_type=config.model_type,
-                max_seq_length=task_args.max_seq_length,
-                overwrite_cache=data_args.overwrite_cache,
-            )
-            if training_args.do_eval or training_args.do_predict
-            else None
-        )
 
-        # --- Initialize trainer from huggingface ---
-        logger.info("======= Prepare trainer =======")
-        trainer = Trainer(
-            model=model,
-            args=training_args,
-            train_dataset=train_dataset,
-            eval_dataset=eval_dataset,
-            compute_metrics=compute_metrics_crf
-            if model_args.with_bilstmcrf
-            else compute_metrics,
-            # tb_writer=SummaryWriter(training_args.logging_dir),
-            # optimizers
-        )
+    # --- Initialize trainer from huggingface ---
+    logger.info("======= Prepare trainer =======")
+    trainer = Trainer(
+        model=model,
+        args=training_args,
+        train_dataset=train_dataset,
+        eval_dataset=eval_dataset,
+        compute_metrics=compute_metrics_crf
+        if model_args.with_bilstmcrf
+        else compute_metrics,
+        # tb_writer=SummaryWriter(training_args.logging_dir),
+        # optimizers
+    )
 
-        # --- Train ---
-        if training_args.do_train:
-            trainer.train()
-            trainer.save_model()
+    # --- Train ---
+    if training_args.do_train:
+        trainer.train()
+        trainer.save_model()
+        if trainer.is_world_master():
+            tokenizer.save_pretrained(training_args.output_dir)
+
+    # --- Evaluate all set ---
+    if training_args.do_eval:
+        for dataset in [train_dataset, eval_dataset, test_dataset]:
+            metrics = trainer.evaluate(dataset)
+            evaluation_results_file = os.path.join(
+                training_args.output_dir, "evaluation_results.txt"
+            )
             if trainer.is_world_master():
-                tokenizer.save_pretrained(training_args.output_dir)
+                with open(evaluation_results_file, "a", encoding="utf-8") as writer:
+                    logger.info(f"Eval results of {dataset.set} set")
+                    writer.write(f"Eval results of {dataset.set} set\n")
+                    for key, value in metrics.items():
+                        logger.info("  %s = %s", key, value)
+                        writer.write("%s = %s\n" % (key, value))
+                    writer.write("\n")
 
-        # --- Evaluate all set ---
-        if training_args.do_eval:
-            for dataset in [train_dataset, eval_dataset, test_dataset]:
-                metrics = trainer.evaluate(dataset)
-                evaluation_results_file = os.path.join(
-                    training_args.output_dir, "evaluation_results.txt"
-                )
-                if trainer.is_world_master():
-                    with open(evaluation_results_file, "a") as writer:
-                        logger.info(f"Eval results of {dataset.set} set")
-                        writer.write(f"Eval results of {dataset.set} set\n")
-                        for key, value in metrics.items():
-                            logger.info("  %s = %s", key, value)
-                            writer.write("%s = %s\n" % (key, value))
-                        writer.write("\n")
+    # --- Predict test set ---
+    if training_args.do_predict:
+        predictions, label_ids, metrics = trainer.predict(test_dataset)
+        if model_args.with_bilstmcrf:
+            _, preds_list = align_predictions_crf(predictions, label_ids)
+        else:
+            _, preds_list = align_predictions(predictions, label_ids)
 
-    elif sys.argv[1] == "mrc":
-
-        # --- Prepare model ---
-        model = BertMRCModel.from_pretrained(
-            model_args.model_name_or_path,
-            from_tf=bool(".ckpt" in model_args.model_name_or_path),
-            config=config,
-            cache_dir=model_args.cache_dir,
+        test_predictions_file = os.path.join(
+            training_args.output_dir, "test_predictions.txt"
         )
-        model.resize_token_embeddings(len(tokenizer))
+        if trainer.is_world_master():
+            with open(test_predictions_file, "w", encoding="utf-8") as writer:
+                with open(
+                    os.path.join(data_args.data_dir, data_args.test_filename),
+                    "r",
+                    encoding="utf-8",
+                ) as f:
+                    write_predictions_to_file(writer, f, preds_list)
 
-        # --- Prepare datasets ---
-        train_dataset = (
-            NerAsMRCDataset(
-                data_dir=data_args.data_dir,
-                filename=data_args.train_filename,
-                tokenizer=tokenizer,
-                labels=labels,
-                model_type=config.model_type,
-                max_seq_length=task_args.max_seq_length,
-                overwrite_cache=data_args.overwrite_cache,
-            )
-            if training_args.do_train or training_args.do_eval
-            else None
-        )
-        eval_dataset = (
-            NerAsMRCDataset(
-                data_dir=data_args.data_dir,
-                filename=data_args.dev_filename,
-                tokenizer=tokenizer,
-                labels=labels,
-                model_type=config.model_type,
-                max_seq_length=task_args.max_seq_length,
-                overwrite_cache=data_args.overwrite_cache,
-            )
-            if training_args.do_train or training_args.do_eval
-            else None
-        )
-        test_dataset = (
-            NerAsMRCDataset(
-                data_dir=data_args.data_dir,
-                filename=data_args.test_filename,
-                tokenizer=tokenizer,
-                labels=labels,
-                model_type=config.model_type,
-                max_seq_length=task_args.max_seq_length,
-                overwrite_cache=data_args.overwrite_cache,
-            )
-            if training_args.do_eval or training_args.do_predict
-            else None
-        )
+    # elif sys.argv[1] == "mrc":
 
-        # --- Initialize trainer from huggingface ---
-        trainer = Trainer(
-            model=model,
-            args=training_args,
-            train_dataset=train_dataset,
-            eval_dataset=eval_dataset,
-        )
+    #     # --- Prepare model ---
+    #     model = BertMRCModel.from_pretrained(
+    #         model_args.model_name_or_path,
+    #         from_tf=bool(".ckpt" in model_args.model_name_or_path),
+    #         config=config,
+    #         cache_dir=model_args.cache_dir,
+    #     )
+    #     model.resize_token_embeddings(len(tokenizer))
 
-        # --- Train ---
-        if training_args.do_train:
-            trainer.train()
-            trainer.save_model()
-            if trainer.is_world_master():
-                tokenizer.save_pretrained(training_args.output_dir)
+    #     # --- Prepare datasets ---
+    #     train_dataset = (
+    #         NerAsMRCDataset(
+    #             data_dir=data_args.data_dir,
+    #             filename=data_args.train_filename,
+    #             tokenizer=tokenizer,
+    #             labels=labels,
+    #             model_type=config.model_type,
+    #             max_seq_length=task_args.max_seq_length,
+    #             overwrite_cache=data_args.overwrite_cache,
+    #         )
+    #         if training_args.do_train or training_args.do_eval
+    #         else None
+    #     )
+    #     eval_dataset = (
+    #         NerAsMRCDataset(
+    #             data_dir=data_args.data_dir,
+    #             filename=data_args.dev_filename,
+    #             tokenizer=tokenizer,
+    #             labels=labels,
+    #             model_type=config.model_type,
+    #             max_seq_length=task_args.max_seq_length,
+    #             overwrite_cache=data_args.overwrite_cache,
+    #         )
+    #         if training_args.do_train or training_args.do_eval
+    #         else None
+    #     )
+    #     test_dataset = (
+    #         NerAsMRCDataset(
+    #             data_dir=data_args.data_dir,
+    #             filename=data_args.test_filename,
+    #             tokenizer=tokenizer,
+    #             labels=labels,
+    #             model_type=config.model_type,
+    #             max_seq_length=task_args.max_seq_length,
+    #             overwrite_cache=data_args.overwrite_cache,
+    #         )
+    #         if training_args.do_eval or training_args.do_predict
+    #         else None
+    #     )
 
-        # --- Predict test set ---
-        if training_args.do_predict:
-            predictions = trainer.predict(test_dataset)
-            logger.info(f"preditcions: {predictions}")
+    #     # --- Initialize trainer from huggingface ---
+    #     trainer = Trainer(
+    #         model=model,
+    #         args=training_args,
+    #         train_dataset=train_dataset,
+    #         eval_dataset=eval_dataset,
+    #     )
+
+    #     # --- Train ---
+    #     if training_args.do_train:
+    #         trainer.train()
+    #         trainer.save_model()
+    #         if trainer.is_world_master():
+    #             tokenizer.save_pretrained(training_args.output_dir)
+
+    #     # --- Predict test set ---
+    #     if training_args.do_predict:
+    #         predictions = trainer.predict(test_dataset)
+    #         logger.info(f"preditcions: {predictions}")
 
 
 if __name__ == "__main__":

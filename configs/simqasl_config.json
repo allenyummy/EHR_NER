@@ -4,7 +4,7 @@
     "dev_filename": "dev.json",
     "test_filename": "test.json",
     "labels_path": "data/final/label/label4qasl.txt",
-    "query_path": "data/final/query/qasl_query.json",
+    "query_path": "data/final/query/simqasl_query.json",
     "max_seq_length": 512,
     "overwrite_cache": false,
     "model_name_or_path": "hfl/chinese-bert-wwm",

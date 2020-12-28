@@ -19,13 +19,13 @@ class DataArguments:
     )
     labels_path: str = field(metadata={"help": "Path to a file containing all labels."})
     train_filename: str = field(
-        default="train.txt", metadata={"help": "The filename of training set."}
+        default="train.json", metadata={"help": "The filename of training set."}
     )
     dev_filename: str = field(
-        default="dev.txt", metadata={"help": "The filename of dev set."}
+        default="dev.json", metadata={"help": "The filename of dev set."}
     )
     test_filename: str = field(
-        default="test.txt", metadata={"help": "The filename of test set."}
+        default="test.json", metadata={"help": "The filename of test set."}
     )
     overwrite_cache: bool = field(
         default=False,
@@ -46,6 +46,11 @@ class SLDataArguments:
 
 @dataclass
 class QASLDataArguments:
+    query_path: str = field(
+        metadata={
+            "help": "The query file."
+        }
+    )
     max_seq_length: int = field(
         default=128,
         metadata={

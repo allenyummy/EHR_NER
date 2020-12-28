@@ -37,8 +37,6 @@ loop_1_checked = pd.read_excel(in_data_path)
 cols = loop_1_checked.columns.tolist()[1:]  ## drop passage
 
 for i, d in enumerate(data):
-    if i == 742:
-        break
 
     pid = d["pid"]
     passage = d["passage"]
