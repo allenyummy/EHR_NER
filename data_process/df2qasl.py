@@ -16,14 +16,14 @@ in_data_path = os.path.join(
     "simqasl",
     "0817_8786_concat_num",
     "loop_1_checked",
-    "dev_20201223_50.xlsx",
+    "dev_checked.xlsx",
 )
 out_data_path = os.path.join(
     "data",
     "simqasl",
     "0817_8786_concat_num",
     "loop_1_checked",
-    "dev_20201223_50.txt",
+    "dev_checked.txt",
 )
 
 
@@ -37,7 +37,7 @@ loop_1_checked = pd.read_excel(in_data_path)
 cols = loop_1_checked.columns.tolist()[1:]  ## drop passage
 
 for i, d in enumerate(data):
-    if i == 51:
+    if i == 742:
         break
 
     pid = d["pid"]
@@ -121,6 +121,10 @@ for i, d in enumerate(data):
     before_flat_ne_answers = list()
     flat_ne_answers = list()
     priority = {
+        "OPC": 0.01,
+        "EMC": 0.01,
+        "CTC": 0.02,
+        "RTC": 0.02,
         "ADD": 0,
         "OPD": 1,
         "OPDS": 1.5,
@@ -134,11 +138,13 @@ for i, d in enumerate(data):
         "EMDE": 2.5,
         "IND": 2.6,
         "ICD": 2.6,
+        "IBD": 2.6,
         "SGD": 3,
         "SGDS": 3.5,
         "DCD": 5,
         "OCD": 5.1,
         "OND": 5.1,
+        "OBD": 5.1,
         "CTDE": 5.1,
         "RTDE": 5.1,
         "SGDE": 5.1,
