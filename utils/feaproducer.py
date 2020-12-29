@@ -355,7 +355,9 @@ def get_labels(path: str) -> List[str]:
         labels = f.read().splitlines()
     if "O" not in labels:
         labels = ["O"] + labels
-    return labels
+    label_map = {i: label for i, label in enumerate(labels)}
+    num_labels = len(labels)
+    return labels, label_map, num_labels
 
 
 if __name__ == "__main__":
@@ -366,7 +368,7 @@ if __name__ == "__main__":
     # --- sl
     data_path = "data/final/dev.json"
     label_path = "data/final/label/label4sl.txt"
-    labels = get_labels(label_path)
+    labels, _, _ = get_labels(label_path)
     examples = read_examples_from_file(data_path)
     features = convert_examples_to_features(
         examples,
