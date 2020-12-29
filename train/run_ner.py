@@ -98,10 +98,10 @@ def align_predictions_crf(
         attention_masks.append(attention_mask)
 
     # --- Decode best path by CRF ---
-    emissions = torch.from_numpy(predictions).cuda()
-    attention_masks = torch.FloatTensor(attention_masks).cuda()
+    emissions = torch.from_numpy(predictions)
+    attention_masks = torch.FloatTensor(attention_masks)
     best_path = trainer.model.crf.decode(
-        emissions=emissions*class_weights.cuda(), mask=attention_masks.type(torch.uint8)
+        emissions=emissions.cuda()*class_weights.cuda(), mask=attention_masks.type(torch.uint8).cuda()
     )
 
     # --- Drop nn.CrossEntropyLoss().ignore_index ---
@@ -268,6 +268,10 @@ def main():
         else None
     )
 
+    # --- for align_prediction_crf ---
+    class_weights = model_args.class_weights if model_args.class_weights else [1.0]*len(label_map)
+    class_weights = torch.FloatTensor(class_weights)
+    
     # --- NER as Sequence Labeling Task ---
     if task == "sl":
 
@@ -289,14 +293,10 @@ def main():
                 config=config,
                 cache_dir=model_args.cache_dir,
             )
-
         model.resize_token_embeddings(len(tokenizer))
 
+    # --- NER as QA-based Sequence Labeling Task ---
     elif task in ["qasl", "simqasl"]:
-
-        # --- for align_prediction_crf ---
-        class_weights = model_args.class_weights if model_args.class_weights else [1.0, 1.0, 1.0]
-        class_weights = torch.FloatTensor(class_weights)
 
         # --- Prepare model ---
         logger.info("======= Prepare model =======")
