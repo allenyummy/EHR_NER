@@ -33,11 +33,7 @@ from configs.args_dataclass import (
     ModelArguments,
 )
 from utils.metrics_sl import accuracy_score, f1_score, precision_score, recall_score
-from utils.feaproducer import NerDataset
-from utils.sl import (
-    get_labels,
-    write_predictions_to_file,
-)
+from utils.feaproducer import NerDataset, get_labels, write_predictions_to_file
 from models.bert_sl import BertSLModel
 from models.bertbilstmcrf_sl import BertBiLSTMCRFSLModel
 from models.bert_qasl import BertQASLModel
@@ -145,13 +141,11 @@ def main():
         parser = HfArgumentParser(
             (DataArguments, SLDataArguments, ModelArguments, TrainingArguments)
         )
-        query_path = None
     elif task in ["qasl", "simqasl"]:
         logger.info("======= QA Sequence Labeling =======")
         parser = HfArgumentParser(
             (DataArguments, QASLDataArguments, ModelArguments, TrainingArguments)
         )
-        query_path = task_args.query_path
     elif task == "mrc":
         logger.info("======= Machine Reading Comprehension Sequence Labeling =======")
         parser = HfArgumentParser(
@@ -222,6 +216,7 @@ def main():
 
     # --- Prepare datasets ---
     logger.info("======= Prepare dataset =======")
+    query_path = task_args.query_path if hasattr(task_args, "query_path") else None
     train_dataset = (
         NerDataset(
             task=task,
