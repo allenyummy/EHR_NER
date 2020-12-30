@@ -143,7 +143,7 @@ class DataTransformer:
         out_data["time"] = self.time
         out_data["data"] = list()
 
-        for i in range(len(data)):
+        for i in tqdm(range(len(data))):
             pid = data.loc[i, "pid"]
             passage = data.loc[i, "passage"]
             passage_tokens = data.loc[i, "passage_tokens"].split()
@@ -210,5 +210,5 @@ if __name__ == "__main__":
 
     # --- Demo for df2squad function
     input_data_path = os.path.join("data", "final", "V0.1c", "1. df_checked", "dev_checked.xlsx")
-    output_data_path = os.path.join("data", "final", "V0.1c", "dev_checked_demo.json")
+    output_data_path = os.path.join("data", "final", "V0.1c", "dev.json")
     out_data = dt.df2squad(input_data_path, output_data_path)
