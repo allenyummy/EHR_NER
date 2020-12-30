@@ -21,6 +21,7 @@ class DataAugmentator:
         self.time = time
         with open(query_path, "r", encoding="utf-8") as fq:
             self.query = json.load(fq)
+        self.model_path = model_path
         self.model = BertQASLPredictor(model_path)
         self.label_map = {i: label for i, label in enumerate(self.query.keys())}
 
@@ -29,9 +30,9 @@ class DataAugmentator:
         with open(input_data_path, "r", encoding="utf-8") as fin:
             in_data = json.load(fin)
         data = in_data["data"]
-        in_data["versoin"] = self.version
+        in_data["version"] = self.version
         in_data["time"] = self.time
-        in_data["aug8model"] = f"{self.model}"
+        in_data["aug8model"] = f"{self.model_path}"
 
         # --- Augment
         for i, d in enumerate(tqdm(data)):
@@ -146,12 +147,12 @@ class DataAugmentator:
 
 
 if __name__ == "__main__":
-    version = "v3.0"
+    version = "v0.1"
     time = datetime.datetime.today().strftime("%Y/%m/%d_%H:%M:%S")
     query_path = os.path.join("data", "final", "query", "simqasl_query.json")
     model_path = "trained_model/0817_8786_concat_num/simqasl/2020-12-10-07@hfl@chinese-bert-wwm@weightedCE-0.11-1-0.16_S-512_B-8_E-20_LR-5e-5_SD-1/"
     p_times = 1.3
-    input_data_path = "data/final/dev.json"
-    output_data_path = "data/final/loop_1/dev.json"
+    input_data_path = "data/final/V0.0/dev.json"
+    output_data_path = "data/final/V0.1/dev.json"
     da = DataAugmentator(version, time, query_path, model_path)
     out_data = da.augment(input_data_path, p_times, output_data_path)
