@@ -21,5 +21,8 @@
     "do_predict": false,
     "logging_steps": 1000,
     "evaluate_during_training": true,
-    "eval_steps": 5000
+    "eval_steps": 5000,
+    "load_best_model_at_end": true,
+    "metric_for_best_model": "eval_f1",
+    "greater_is_better": true
 }
