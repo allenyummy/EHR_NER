@@ -147,8 +147,8 @@ class DataTransformer:
             pid = data.loc[i, "pid"]
             passage = data.loc[i, "passage"]
             passage_tokens = data.loc[i, "passage_tokens"].split()
-            flat_ne_answers = data.loc[i, "flat_ne_answers"].split(",\n")
-            nested_ne_answers = data.loc[i, "nested_ne_answers"].split(",\n")
+            flat_ne_answers = data.loc[i, "flat_ne_answers"].split(",\n") if not pd.isna(data.loc[i, "flat_ne_answers"]) else list()
+            nested_ne_answers = data.loc[i, "nested_ne_answers"].split(",\n") if not pd.isna(data.loc[i, "flat_ne_answers"]) else list()
 
             flat_ne_answers_lst = list()
             for ans in flat_ne_answers:
