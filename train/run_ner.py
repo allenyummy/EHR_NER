@@ -209,7 +209,7 @@ def main():
 
     # --- Add tokens that are might not in vocab.txt ---
     logger.info("======= Add tokens that are might not in vocab.txt =======")
-    add_tokens = ["瘜","皰","搐","齲","蛀","髕","闌","疝","嚥","簍",
+    add_tokens = ["瘜","皰","搐","齲","蛀","髕","闌","疝","嚥","簍","枴",
                   "廔","顳","溼","髖","膈","搔","攣","仟","鐙","蹠","橈"]
     tokenizer.add_tokens(add_tokens)
     logger.debug(f"Add tokens: {add_tokens}")
