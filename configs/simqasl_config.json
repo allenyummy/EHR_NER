@@ -1,5 +1,5 @@
 {
-    "data_dir": "data/final/",
+    "data_dir": "data/final/V3.0",
     "train_filename": "train.json",
     "dev_filename": "dev.json",
     "test_filename": "test.json",
@@ -13,7 +13,7 @@
     "cache_dir": "../pretrained_model/cache_from_huggingface_s3/hfl/chinese-bert-wwm/",
     "class_weights": [0.11, 1, 0.16],
     "output_dir": "exp/",
-    "num_train_epochs": 20,
+    "num_train_epochs": 40,
     "per_gpu_train_batch_size": 8,
     "learning_rate": 5e-5,
     "save_steps": 5000,
