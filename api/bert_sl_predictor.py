@@ -7,7 +7,7 @@ import os
 import json
 import torch
 import torch.nn.functional as F
-from transformers import BertTokenizer
+from transformers import BertConfig, BertTokenizer
 from models.bert_sl import BertSLModel
 from models.bertbilstmcrf_sl import BertBiLSTMCRFSLModel
 
@@ -19,7 +19,7 @@ class BertSLPredictor:
         self.model_dir = model_dir
         self.with_bilstmcrf = with_bilstmcrf
         self.config, self.tokenizer, self.model = self._load()
-        self.id2label = self.config["id2label"]
+        self.id2label = self.config.id2label
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.model = self.model.to(self.device)
         self.model.eval()
@@ -29,7 +29,7 @@ class BertSLPredictor:
         # ---- Preprocess input ---
         inputs = self.tokenizer(
             passage, truncation=True, max_length=512, return_tensors="pt"
-        )
+        ).to(self.device)
         tokens = self.tokenizer.convert_ids_to_tokens(
             inputs.input_ids.cpu().detach().numpy().tolist()[0]
         )
@@ -64,12 +64,12 @@ class BertSLPredictor:
                 r = ()
                 if self.with_bilstmcrf:
                     lidp = label_id_pred[i]
-                    lp = self.id2label[str(lidp)]
+                    lp = self.id2label[lidp]
                     r += (lp,)
                 else:
                     for k in range(top_k):
                         lidp = label_id_pred[i, k]
-                        lp = self.id2label[str(lidp)]
+                        lp = self.id2label[lidp]
                         p = label_id_prob[i, k]
                         r += (lp, p)
                 results.append((t,) + r)
@@ -79,10 +79,7 @@ class BertSLPredictor:
         return results
 
     def _load(self):
-        config_path = os.path.join(self.model_dir, "config.json")
-        if not os.path.isfile(config_path):
-            raise ValueError(f"{self.model_dir} must contain config.json.")
-        config = json.load(open(config_path))
+        config = BertConfig.from_pretrained(self.model_dir)
         tokenizer = BertTokenizer.from_pretrained(self.model_dir)
         if self.with_bilstmcrf:
             model = BertBiLSTMCRFSLModel.from_pretrained(
