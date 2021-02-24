@@ -1,5 +1,7 @@
 test:
 	PYTHONPATH=./ pytest --log-cli-level=debug --cov=train/ --cov=utils/datasets/ --cov=configs/ --cov=tests/
+test_model_pred:
+	PYTHONPATH=./::../seqhelper pytest -rx tests/test_model_pred/ --log-cli-level=info --cov=./
 freeze:
 	poetry export --without-hashes -f requirements.txt --output requirements.txt
 build:
