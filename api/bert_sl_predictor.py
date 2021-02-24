@@ -82,7 +82,10 @@ class BertSLPredictor:
 
     def refine(self, results):
         # --- only support top 1 result ---
-        token, label, prob = zip(*results)
+        if self.with_bilstmcrf:
+            token, label = zip(*results)
+        else:
+            token, label, prob = zip(*results)
         seq = [(t, l) for t, l in zip(token, label)]
         ents = EntityFromList(seq=seq, scheme=IOB2).entities
         return ents
