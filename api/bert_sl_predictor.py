@@ -10,6 +10,8 @@ import torch.nn.functional as F
 from transformers import BertConfig, BertTokenizer
 from models.bert_sl import BertSLModel
 from models.bertbilstmcrf_sl import BertBiLSTMCRFSLModel
+from src.scheme import IOB2
+from src.entity import EntityFromList
 
 logger = logging.getLogger(__name__)
 
@@ -77,6 +79,13 @@ class BertSLPredictor:
         # --- Drop [CLS] and [SEP] ---
         results = results[1:-1]
         return results
+
+    def refine(self, results):
+        # --- only support top 1 result ---
+        token, label, prob = zip(*results)
+        seq = [(t, l) for t, l in zip(token, label)]
+        ents = EntityFromList(seq=seq, scheme=IOB2).entities
+        return ents
 
     def _load(self):
         config = BertConfig.from_pretrained(self.model_dir)
