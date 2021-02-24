@@ -1,9 +1,5 @@
-# Named Entity Recognition of Electrical Health Record
+# Nested Named Entity Recognition for Chinese Electrical Health Record with QA-based Sequence Labeling
 
-## Sequence Labeling
-
----
-## Machine Reading Comprehension
 
 ---
 ## Virtual Environment
@@ -20,6 +16,88 @@ $ poetry install
 ```
 $ docker pull allenyummy/ehr_ner:0.1.0
 $ docker run --name ${container_name} -t -i --rm -v ${home}/EHR_NER/:/workspace ehr_ner:0.1.0
+```
+
+---
+## Materials for which you should prepare
++ Dataset
+
+You should prepare your own dataet since the datset is not going to be public. However, it doesn't mean that the idea shared by the repo is not helpful. Instead, you can use QASL framework for the public nested ner corpus, which is also my next step.
+
++ Pretrained Model
+
+There are plenty of pretrained model released by huggingface (https://huggingface.co/models). Please download a model depending on language, model sturcture, cased/uncased, ... etc.
+
++ Query
+
+If treating NER as QASL, then it's an essential and important step to create queries. The principle to construct queris is that one Entity Type corresponds to one Query. Li et al., (2019) (https://arxiv.org/pdf/1910.11476.pdf) conducted a series experiments on English OntoNote 5.0 with different kinds of queries (e.g., Keyword, Template, Wikipedia, Annotation Guildlines, ...). In my opinion, it's simple to use keywords as queries (i.e., the names of entity types).
+
+---
+## Train on training set and Evaluate on each data set
++ Treating NER as Traditional Sequence Labeling (SL)
+```
+$ make run_sl
+$ cat sl_config.json
+{
+    "data_dir": "data_dir/", ## modified it
+    "train_filename": "train.json", ## modified it
+    "dev_filename": "dev.json", ## modified it
+    "test_filename": "test.json", ## modified it
+    "labels_path": "label_dir/label_sl.txt", ## modified it
+    "max_seq_length": 512,
+    "overwrite_cache": false,
+    "model_name_or_path": "hfl/chinese-bert-wwm",  ## download before training
+    "return_dict": true,
+    "with_bilstmcrf": false,
+    "num_train_epochs": 40,
+    "per_gpu_train_batch_size": 8,
+    "learning_rate": 5e-5,
+    "seed": 1,
+    "do_train": true,
+    "do_eval": true,
+    "do_predict": false,
+    "evaluate_during_training": true,
+    "save_steps": 1000,
+    "logging_steps": 1000,
+    "eval_steps": 1000,
+    "load_best_model_at_end": true,
+    "metric_for_best_model": "eval_f1",
+    "greater_is_better": true
+}
+```
++ Treating NER as QA-based Sequence Labeling (QASL)
+```
+$ make run_simqasl
+$ cat simqasl_config.json
+{
+    "data_dir": "data_dir",  ## modified it
+    "train_filename": "train.json",
+    "dev_filename": "dev.json",
+    "test_filename": "test.json",
+    "labels_path": "label_dir/label_simqasl.txt", ## modified it
+    "query_path": "queruy_dir/query.json",  ## modified it
+    "max_seq_length": 512,
+    "overwrite_cache": false,
+    "model_name_or_path": "hfl/chinese-bert-wwm",
+    "return_dict": true,
+    "with_bilstmcrf": false,
+    "class_weights": [0.11, 1, 0.16],
+    "output_dir": "exp/",
+    "num_train_epochs": 40,
+    "per_gpu_train_batch_size": 8,
+    "learning_rate": 5e-5,
+    "seed": 1,
+    "do_train": true,
+    "do_eval": true,
+    "do_predict": false,
+    "evaluate_during_training": true,
+    "save_steps": 5000,
+    "logging_steps": 1000,
+    "eval_steps": 5000,
+    "load_best_model_at_end": true,
+    "metric_for_best_model": "eval_f1",
+    "greater_is_better": true
+}
 ```
 
 ---
