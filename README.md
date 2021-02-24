@@ -26,7 +26,7 @@ You should prepare your own dataet since the datset is not going to be public. H
 
 + Pretrained Model
 
-There are plenty of pretrained model released by huggingface (https://huggingface.co/models). Please download a model depending on language, model sturcture, cased/uncased, ... etc.
+There are plenty of pretrained model released by huggingface (https://huggingface.co/models). Please download a model depending on language, model sturcture, cased/uncased, ... etc. In my case, I use `hfl/chinese-bert-wwm` as the pretrained model.
 
 + Query
 
@@ -48,7 +48,7 @@ $ cat sl_config.json
     "overwrite_cache": false,
     "model_name_or_path": "hfl/chinese-bert-wwm",  ## download before training
     "return_dict": true,
-    "with_bilstmcrf": false,
+    "with_bilstmcrf": false,  ## modified it
     "num_train_epochs": 40,
     "per_gpu_train_batch_size": 8,
     "learning_rate": 5e-5,
@@ -80,7 +80,7 @@ $ cat simqasl_config.json
     "overwrite_cache": false,
     "model_name_or_path": "hfl/chinese-bert-wwm",
     "return_dict": true,
-    "with_bilstmcrf": false,
+    "with_bilstmcrf": false,  ## modified it
     "class_weights": [0.11, 1, 0.16],
     "output_dir": "exp/",
     "num_train_epochs": 40,
@@ -99,9 +99,29 @@ $ cat simqasl_config.json
     "greater_is_better": true
 }
 ```
+Make sure whether BiLSTMCRF structure is used in model or not. 
 
 ---
+## Predict for one passage with a trained model
+Once finishing training, you should also obtain the model performance on each data set.
 
+If you want to check each result of each passage, you can open `api/` directory, and there are two py file that you can use: `bert_sl_predictor`, and `bert_qasl_predictor`.
+
+Also, another repo `seqhelper` is needed to handle some results of sequence labeling. You have to clone it.
+
+```
+$ PYTHONPATH=./::../seqhelper python bert_sl_predictor
+$ PYTHONPATH=./::../seqhelper python bert_qasl_predictor
+```
+
+---
+## Test
+Test the trained model with specific testcases.
+```
+$ make test_model_pred
+```
+
+---
 ## Citation
 ```
 @article{Comimg soon,
