@@ -10,13 +10,16 @@ import torch.nn.functional as F
 from transformers import BertConfig, BertTokenizer
 from models.bert_qasl import BertQASLModel
 from models.bertbilstmcrf_qasl import BertBiLSTMCRFQASLModel
+from src.scheme import IOB2
+from src.entity import EntityFromList
 
 logger = logging.getLogger(__name__)
 
 
 class BertQASLPredictor:
-    def __init__(self, model_dir: str, with_bilstmcrf: bool = False):
+    def __init__(self, model_dir: str, query_path: str, with_bilstmcrf: bool = False):
         self.model_dir = model_dir
+        self.query_path = query_path
         self.with_bilstmcrf = with_bilstmcrf
         self.class_weights = torch.FloatTensor([0.11, 1, 0.16])
         self.config, self.tokenizer, self.model = self._load()
@@ -25,7 +28,17 @@ class BertQASLPredictor:
         self.model = self.model.to(self.device)
         self.model.eval()
 
-    def predict(
+    def predict_overall(self, passage: str = "", top_k: int = 1):
+        with open(self.query_path, "r", encoding="utf-8") as f:
+            queries = json.load(f)
+        overall_results = list()
+        for q_tag, query in queries.items():
+            res = self.predict_for_one_query(q_tag, query, passage, top_k)
+            ents = self.refine(res)
+            overall_results.extend(ents)
+        return overall_results
+
+    def predict_for_one_query(
         self, query_tag: str = "", query: str = "", passage: str = "", top_k: int = 1
     ):
         # --- Preprocess input ---
@@ -83,6 +96,16 @@ class BertQASLPredictor:
         results = results[first_sep_idx + 1 : -1]
         return results
 
+    def refine(self, results):
+        # --- only support top 1 result ---
+        if self.with_bilstmcrf:
+            token, label = zip(*results)
+        else:
+            token, label, prob = zip(*results)
+        seq = [(t, l) for t, l in zip(token, label)]
+        ents = EntityFromList(seq=seq, scheme=IOB2).entities
+        return ents
+
     def _load(self):
         config = BertConfig.from_pretrained(self.model_dir)
         tokenizer = BertTokenizer.from_pretrained(self.model_dir)
@@ -99,36 +122,16 @@ if __name__ == "__main__":
 
     model_dir = "trained_model/0817_8786_concat_num/qasl/2020-11-11-00@hfl@chinese-bert-wwm@weightedCE-0.11-1-0.16_S-512_B-4_E-5_LR-5e-5_SD-1/"
     model_dir = "trained_model/0817_8786_concat_num/simqasl/2020-12-17-07@hfl@chinese-bert-wwm@wBiLSTMCRF-0.11-1-0.16_S-512_B-8_E-20_LR-5e-5_SD-1"
+    query_path = "data/final/query/simqasl_query.json"
+
     with_bilstmcrf = False
     if "BiLSTMCRF" in model_dir:
         with_bilstmcrf = True
-    model = BertQASLPredictor(model_dir=model_dir, with_bilstmcrf=with_bilstmcrf)
+
+    model = BertQASLPredictor(
+        model_dir=model_dir, query_path=query_path, with_bilstmcrf=with_bilstmcrf
+    )
     passage = "病患於民國108年10月5日至本院入院急診，經手術之後，民國108年10月7日出院。"
-    
-    with open("data/final/query/simqasl_query.json", "r") as f:
-        qasl_query = json.load(f)
-
-    import sys
-
-    q_tag = sys.argv[1]
-    query = qasl_query[q_tag]
-    print(query)
-    print(passage)
-    results = model.predict(q_tag, query, passage, 3)
-    print(results)
-    # import pandas as pd
-
-    # pd.set_option("display.max_rows", 200)
-    # df = pd.DataFrame(
-    #     results,
-    #     columns=[
-    #         "Token",
-    #         "Top1_label",
-    #         "Top1_prob",
-    #         "Top2_label",
-    #         "Top2_prob",
-    #         "Top3_label",
-    #         "Top3_prob",
-    #     ],
-    # )
-    # print(df)
+    results = model.predict_overall(passage, 1)
+    for i in results:
+        logger.warning(i)
