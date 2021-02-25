@@ -1,6 +1,6 @@
 # encoding=utf-8
 # Author: Yu-Lun Chiang
-# Description: Test for api/bert_sl_predictor.py
+# Description: Test for SL BERT-BiLSTMCRF
 
 import logging
 import pytest
