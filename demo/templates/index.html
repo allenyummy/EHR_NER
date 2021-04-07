@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Chinese Electrical Health Record</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+</head>
+
+<body>
+
+    <div class="w3-container w3-blue-gray">
+        <h2> Named Entity Recognition on Chinese Electrical Health Records </h2>
+        <p> made by Yu-Lun Chiang @ CTBC Bank, Co., Ltd.</p>
+    </div>
+
+    <div class="w3-panel">
+        <form action="{{ url_for('index') }}" method="post">
+            <div class="w3-panel">
+                <h4> Type in a passage of a chinese electrical health record. (Limited Length: 510 tokens) </h4>
+                <textarea name="passage" rows=5 cols=150 maxlength=510
+                    placeholder="e.g., 病患於民國100年09年05日入院。"></textarea>
+            </div>
+
+            <div class="w3-row">
+                <div class="w3-container w3-half">
+                    <button class="w3-button w3-round w3-border" type="submit" name="Submit" value="send_to_SL">
+                        Submit for SL </button>
+                </div>
+                <div class="w3-container w3-half">
+                    <button class="w3-button w3-round w3-border" type="submit" name="Submit" value="send_to_QASL">
+                        Submit for QASL </button>
+                </div>
+
+                <div class="w3-panel w3-half">
+                    {% if sl_results and sl_results["passage"] == "" %}
+                    <p> You should type in a passage before clicking the submit button ! </p>
+
+                    {% elif sl_results and sl_results["passage"] != "" %}
+                    <p><span class="w3-tag w3-blue-gray"> Input Passage </span></p>
+                    <p> {{ sl_results["passage"] }} </p>
+                    <br>
+
+                    <p><span class="w3-tag w3-blue-gray"> Tokenization Result </span></p>
+                    <p> {{ sl_results["passage_tokens"] }} </p>
+                    <br>
+
+                    <p><span class="w3-tag w3-blue-gray"> Recognition from Sequence Labeling Model </span></p>
+                    <table class="w3-table w3-bordered w3-centered w3-hoverable">
+                        {% if sl_results["answers"] %}
+                        <tr class="w3-light-gray">
+                            <th>Type</th>
+                            <th>Entity</th>
+                            <th>Start position</th>
+                            <th>End position</th>
+                        </tr>
+                        {% for ans in sl_results["answers"] %}
+                        <tr>
+                            <td>{{ ans.type }}</td>
+                            <td>{{ ans.text }}</td>
+                            <td>{{ ans.start_pos }}</td>
+                            <td>{{ ans.end_pos }}</td>
+                        </tr>
+                        {% endfor %}
+                        {% else %}
+                        <p> No entity found </p>
+                        {% endif %}
+                    </table>
+                    {% endif %}
+                </div>
+
+                <div class="w3-panel w3-half">
+                    {% if qasl_results and qasl_results["passage"] == "" %}
+                    <p> You should type in a passage before clicking the submit button ! </p>
+
+                    {% elif qasl_results and qasl_results["passage"] != "" %}
+                    <p><span class="w3-tag w3-blue-gray"> Input Passage </span></p>
+                    <p> {{ qasl_results["passage"] }} </p>
+                    <br>
+
+                    <p><span class="w3-tag w3-blue-gray"> Tokenization Result </span></p>
+                    <p> {{ qasl_results["passage_tokens"] }} </p>
+                    <br>
+
+                    <p><span class="w3-tag w3-blue-gray"> Recognition from Question Answering Sequence Labeling
+                            Model</span></p>
+                    <table class="w3-table w3-bordered w3-centered w3-hoverable">
+                        {% if qasl_results["answers"] %}
+                        <tr class="w3-light-gray">
+                            <th>Type</th>
+                            <th>Entity</th>
+                            <th>Start position</th>
+                            <th>End position</th>
+                        </tr>
+                        {% for ans in qasl_results["answers"] %}
+                        <tr>
+                            <td>{{ ans.type }}</td>
+                            <td>{{ ans.text }}</td>
+                            <td>{{ ans.start_pos }}</td>
+                            <td>{{ ans.end_pos }}</td>
+                        </tr>
+                        {% endfor %}
+                        {% else %}
+                        <p> No entity found </p>
+                        {% endif %}
+                    </table>
+                    {% endif %}
+                </div>
+            </div>
+        </form>
+    </div>
+
+</body>
+
+</html>
