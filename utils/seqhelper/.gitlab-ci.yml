@@ -1,0 +1,83 @@
+stages:
+  - build
+  - test
+  - release
+
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push"'
+      when: always
+    - when: never
+
+variables:
+  URL: "https://gitlab.com/api/v4/projects/24145269/registry/repositories?tags=true"
+  DEV_IMAGE: $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
+  RELEASE_IMAGE: $CI_REGISTRY_IMAGE:latest
+
+build:image:
+  image: docker:19.03.12
+  services:
+    - docker:19.03.12-dind
+  stage: build
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master"'
+      when: never
+    - changes:
+        - requirements.txt
+        - Dockerfile
+    ## JUST FOR EXPERIMENTS
+    - exists:
+        - requirements.txt
+        - Dockerfile
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - apk update && apk add curl jq
+  script:
+    - |
+      OUTPUT=$(curl $URL --header "PRIVATE-TOKEN:$PRIVATE_TOKEN" 2>/dev/null)
+      LAST_UPDATED_IMAGE=$(echo $OUTPUT | jq -C -r '.[].tags | .[0].location')
+      echo LAST_UPDATED_IMAGE: $LAST_UPDATED_IMAGE
+      echo DEV_IMAGE: $DEV_IMAGE
+    - docker pull $LAST_UPDATED_IMAGE
+    - >
+      docker build
+      --pull
+      --cache-from $LAST_UPDATED_IMAGE
+      --tag $DEV_IMAGE
+      .
+    - docker push $DEV_IMAGE
+
+test:seqhelper:
+  image: $DEV_IMAGE
+  stage: test
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master"'
+      when: never
+    - when: on_success
+  script:
+    - make test
+
+release:image:
+  image: docker:19.03.12
+  services:
+    - docker:19.03.12-dind
+  stage: release
+  only:
+    - master
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - apk update && apk add curl jq
+  script:
+    - |
+      OUTPUT=$(curl $URL --header "PRIVATE-TOKEN:$PRIVATE_TOKEN" 2>/dev/null)
+      if [ "$OUTPUT" == "[]" ]
+      then
+        echo THERE IS NO IMAGE IN THE CONTAINER REGISTRY OF PROJECT.
+        echo PLEASE OPEN AND PUSH A DEV BRANCH.
+        echo IF PASS THE TEST, THEN OPEN A MERGE REQUEST TO MASTER.
+      else
+        LAST_UPDATED_IMAGE=$(echo $OUTPUT | jq -C -r '.[].tags | .[0].location')
+        docker pull $LAST_UPDATED_IMAGE
+        docker tag $LAST_UPDATED_IMAGE $RELEASE_IMAGE
+        docker push $RELEASE_IMAGE
+      fi

@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "seqhelper"
+version = "0.1.0"
+description = ""
+authors = ["Yu-Lun Chiang <chiangyulun0914@gmail.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.8.3"
+pandas = "^1.1.0"
+tqdm = "^4.58.0"
+pytest = "^6.2.2"
+pytest-cov = "^2.11.1"
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
