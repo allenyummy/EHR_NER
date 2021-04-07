@@ -10,15 +10,22 @@ import torch.nn.functional as F
 from transformers import BertConfig, BertTokenizer
 from models.bert_qasl import BertQASLModel
 from models.bertbilstmcrf_qasl import BertBiLSTMCRFQASLModel
-from src.scheme import IOB2
-from src.entity import EntityFromList
+from utils.seqhelper.src.scheme import IOB2
+from utils.seqhelper.src.entity import EntityFromList
 
 logger = logging.getLogger(__name__)
 
 
 class BertQASLPredictor:
-    def __init__(self, model_dir: str, query_path: str, with_bilstmcrf: bool = False):
+    def __init__(
+        self,
+        model_dir: str,
+        queries: dict = {},
+        query_path: str = "",
+        with_bilstmcrf: bool = False,
+    ):
         self.model_dir = model_dir
+        self.queries = queries
         self.query_path = query_path
         self.with_bilstmcrf = with_bilstmcrf
         self.class_weights = torch.FloatTensor([0.11, 1, 0.16])
@@ -29,14 +36,16 @@ class BertQASLPredictor:
         self.model.eval()
 
     def predict_overall(self, passage: str = "", top_k: int = 1):
-        with open(self.query_path, "r", encoding="utf-8") as f:
-            queries = json.load(f)
+        if self.query_path != "":
+            with open(self.query_path, "r", encoding="utf-8") as f:
+                queries = json.load(f)
+                self.queries = queries
         overall_results = list()
-        for q_tag, query in queries.items():
+        for q_tag, query in self.queries.items():
             res = self.predict_for_one_query(q_tag, query, passage, top_k)
-            ents = self.refine(res)
+            token, ents = self.refine(res)
             overall_results.extend(ents)
-        return overall_results
+        return token, overall_results
 
     def predict_for_one_query(
         self, query_tag: str = "", query: str = "", passage: str = "", top_k: int = 1
@@ -104,7 +113,7 @@ class BertQASLPredictor:
             token, label, prob = zip(*results)
         seq = [(t, l) for t, l in zip(token, label)]
         ents = EntityFromList(seq=seq, scheme=IOB2).entities
-        return ents
+        return token, ents
 
     def _load(self):
         config = BertConfig.from_pretrained(self.model_dir)
@@ -132,6 +141,7 @@ if __name__ == "__main__":
         model_dir=model_dir, query_path=query_path, with_bilstmcrf=with_bilstmcrf
     )
     passage = "病患於民國108年10月5日至本院入院急診，經手術之後，民國108年10月7日出院。"
+    passage = "患者於民國109年01月20日10時29分至急診就醫，經縫合手術治療後於民國109年01月20日10時50分離院。"
     results = model.predict_overall(passage, 1)
     for i in results:
         logger.warning(i)

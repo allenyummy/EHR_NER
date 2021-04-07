@@ -10,8 +10,8 @@ import torch.nn.functional as F
 from transformers import BertConfig, BertTokenizer
 from models.bert_sl import BertSLModel
 from models.bertbilstmcrf_sl import BertBiLSTMCRFSLModel
-from src.scheme import IOB2
-from src.entity import EntityFromList
+from utils.seqhelper.src.scheme import IOB2
+from utils.seqhelper.src.entity import EntityFromList
 
 logger = logging.getLogger(__name__)
 
@@ -88,7 +88,7 @@ class BertSLPredictor:
             token, label, prob = zip(*results)
         seq = [(t, l) for t, l in zip(token, label)]
         ents = EntityFromList(seq=seq, scheme=IOB2).entities
-        return ents
+        return token, ents
 
     def _load(self):
         config = BertConfig.from_pretrained(self.model_dir)
