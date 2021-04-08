@@ -7,15 +7,15 @@
 ```
 $ git clone https://github.com/allenyummy/EHR_NER.git
 $ cd EHR_NER/
-$ conda create --name ${env_name} python=3.6.9
+$ conda create --name ${env_name} python=3.8
 $ conda deactivate && conda activate ${env_name}
 $ pip install poetry
 $ poetry install
 ```
 + Docker
 ```
-$ docker pull allenyummy/ehr_ner:0.1.0
-$ docker run --name ${container_name} -t -i --rm -v ${home}/EHR_NER/:/workspace ehr_ner:0.1.0
+$ docker pull allenyummy/ehr_ner:0.1.1-rc
+$ docker run --name ${container_name} -t -i --rm -v ${home}/EHR_NER/:/workspace ehr_ner:0.1.1-rc
 ```
 
 ---
@@ -110,8 +110,8 @@ If you want to check each result of each passage, you can open `api/` directory,
 Also, another repo `seqhelper` is needed to handle some results of sequence labeling. You have to clone it.
 
 ```
-$ PYTHONPATH=./::../seqhelper python bert_sl_predictor
-$ PYTHONPATH=./::../seqhelper python bert_qasl_predictor
+$ PYTHONPATH=./ python bert_sl_predictor
+$ PYTHONPATH=./ python bert_qasl_predictor
 ```
 
 ---
