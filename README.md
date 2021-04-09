@@ -110,7 +110,7 @@ $ cat simqasl_config.json
 Make sure whether the BiLSTMCRF structure is used in model or not. 
 
 ---
-## Predict with a trained model
+## Inference by a trained model
 Once finishing training, you should also obtain the model performance on each data set.
 
 If you want to check each result of each passage, you can open `api/` directory, and there are two py file that you can use: `bert_sl_predictor`, and `bert_qasl_predictor`.
@@ -120,8 +120,6 @@ $ PYTHONPATH=./ python bert_sl_predictor
 $ PYTHONPATH=./ python bert_qasl_predictor
 ```
 
----
-## Demo
 I've uploaded two models on [huggingface](https://huggingface.co/models) that have been trained on my own dataset. These two model are not equipped with BiLSTM-CRF. Instead, both models are simply BERT + Feed-Forward-Network + Softmax.
 
 First one is based on traditional sequence labeling [allenyummy/chinese-bert-wwm-ehr-ner-sl](https://huggingface.co/allenyummy/chinese-bert-wwm-ehr-ner-sl), while second one is based on QA-based sequence labeling [allenyummy/chinese-bert-wwm-ehr-ner-qasl](https://huggingface.co/allenyummy/chinese-bert-wwm-ehr-ner-qasl).
@@ -136,9 +134,6 @@ sl_model = BertSLModel.from_pretrained("allenyummy/chinese-bert-wwm-ehr-ner-sl")
 qasl_model = BertQASLModel.from_pretrained("allenyummy/chinese-bert-wwm-ehr-ner-qasl")
 ```
 
-![demo](https://user-images.githubusercontent.com/36063123/114145365-e4c8ec00-9948-11eb-920a-86f5aff462a0.gif)
-
-
 Or you can use them as pretrained models to finetune your own downstream tasks where langugage is Chinese as well.
 ```
 from transformers import AutoConfig, AutoTokenizer, AutoModelForTokenClassification  
@@ -150,6 +145,15 @@ tokenizer = AutoTokenizer.from_pretrained("allenyummy/chinese-bert-wwm-ehr-ner-q
 model = AutoModelForTokenClassification.from_pretrained("allenyummy/chinese-bert-wwm-ehr-ner-qasl") 
 
 ```
+---
+## Demo
+I've not owned a virtual private server to deploy the service. Therefore, I made a GIF to demostrate the operation.
+You can try by yourself by typing the following command.
+```
+$ PYTHONPATH=./ python demo/app.py
+```
+
+![demo](https://user-images.githubusercontent.com/36063123/114145365-e4c8ec00-9948-11eb-920a-86f5aff462a0.gif)
 
 ---
 ## Test
