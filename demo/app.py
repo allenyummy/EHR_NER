@@ -14,13 +14,6 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 
 
-SL_model = BertSLPredictor("allenyummy/chinese-bert-wwm-ehr-ner-sl")
-sl_results = {
-    "passage": "",
-    "passage_tokens": "",
-    "answers": [],
-}
-
 queries_map = {
     "ADD": "入院日期",
     "DCD": "出院日期",
@@ -54,13 +47,16 @@ queries_map = {
     "CTC": "化療次數",
     "DPN": "就診科別",
 }
+
+SL_model = BertSLPredictor("allenyummy/chinese-bert-wwm-ehr-ner-sl")
 QASL_model = BertQASLPredictor(
     "allenyummy/chinese-bert-wwm-ehr-ner-qasl", queries=queries_map
 )
-qasl_results = {
+results = {
     "passage": "",
     "passage_tokens": "",
-    "answers": [],
+    "sl_answers": [],
+    "qasl_answers": [],
 }
 
 
@@ -99,23 +95,22 @@ def transform_query_tag_and_sort(answers):
 @app.route("/", methods=["GET", "POST"])
 def index():
 
-    if request.method == "POST" and request.values["Submit"] == "send_to_SL":
-        passage = request.values["passage"]
-        passage_tokens, answers = SL_predict(SL_model, passage)
-        sl_results["passage"] = passage
-        sl_results["passage_tokens"] = passage_tokens
-        sl_results["answers"] = answers
+    if request.method == "POST" and request.values["Submit"] == "send":
 
-    elif request.method == "POST" and request.values["Submit"] == "send_to_QASL":
-        passage = request.values["passage"]
-        qasl_results["passage"] = passage
-        passage_tokens, answers = QASL_predict(QASL_model, passage)
-        qasl_results["passage_tokens"] = passage_tokens
-        qasl_results["answers"] = answers
+        if request.values["example_passage"] != "-":
+            passage = request.values["example_passage"]
+        else:
+            passage = request.values["passage"]
 
-    return render_template(
-        "index.html", sl_results=sl_results, qasl_results=qasl_results
-    )
+        sl_passage_tokens, sl_answers = SL_predict(SL_model, passage)
+        qasl_passage_tokens, qasl_answers = QASL_predict(QASL_model, passage)
+        results["passage"] = passage
+        results["passage_tokens"] = sl_passage_tokens
+        results["sl_answers"] = sl_answers
+        results["qasl_answers"] = qasl_answers
+        return render_template("index.html", results=results)
+
+    return render_template("index.html")
 
 
 if __name__ == "__main__":

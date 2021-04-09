@@ -12,7 +12,7 @@
 
     <div class="w3-container w3-blue-gray">
         <h2> Named Entity Recognition on Chinese Electrical Health Records </h2>
-        <p> made by Yu-Lun Chiang @ CTBC Bank, Co., Ltd.</p>
+        <!-- <p> made by Yu-Lun Chiang @ CTBC Bank, Co., Ltd.</p> -->
     </div>
 
     <div class="w3-panel">
@@ -21,41 +21,67 @@
                 <h4> Type in a passage of a chinese electrical health record. (Limited Length: 510 tokens) </h4>
                 <textarea name="passage" rows=5 cols=150 maxlength=510
                     placeholder="e.g., 病患於民國100年09年05日入院。"></textarea>
+                <br>
+                <label for="example_passage">Choose an example: </label>
+                <select name="example_passage" id="example_passage">
+                    <option name="-">-</option>
+                    <option
+                        value="患者於2020年05月04日住院接受既定化學(Lipodox,Endoxan)治療,並於2020年05月05日出院,共住院02日。患者於2020/04/13,2020/05/04,共門診02次。">
+                        passage_1
+                    </option>
+                    <option value="病患於西元2019年10月5日至本院入院急診，於10月7日出院。10月16日、10月21日至本院門診追蹤治療。"> passage_2
+                    </option>
+                    <option value="病患因上述疾病於109年04月24日門診手術切除囊腫,曾於109年03月25日,109年04月08日,109年04月30日至本院門診治療。"> passage_3
+                    </option>
+                    <option
+                        value="該員因上述病情,109年4月7日入院施行右側乳癌根除手術,到109年4月12日出院,該員於109年3月23日,109年3月31日,109年04月16日至本院就醫,共3次。(以下空白)。">
+                        passage_4
+                    </option>
+                    <option value="因上述疾病於109年02月25日曾至門診求診,於同日再度至急診求診予入院治療,於109年02月29日出院,前後住院5日,於109年03月02日至門診追蹤。(以下空白)">
+                        passage_5</option>
+                    <option
+                        value="病患因上述原因,於民國109年02月02日入住本院一般病房,於民國109年02月04日,02月06日,以及02月08日接受靜脈注射化學藥物,於民國109年02月11日至民國109年02月24日接受口服標靶藥物或安慰劑治療,於民國109年02月25日出院,宜於門診持續追蹤治療。--以下空白--">
+                        passage_6
+                    </option>
+                </select>
+            </div>
+
+            <div class="w3-container">
+                <button class="w3-button w3-round w3-border" type="submit" name="Submit" value="send">
+                    Submit </button>
             </div>
 
             <div class="w3-row">
-                <div class="w3-container w3-half">
-                    <button class="w3-button w3-round w3-border" type="submit" name="Submit" value="send_to_SL">
-                        Submit for SL </button>
-                </div>
-                <div class="w3-container w3-half">
+                <!-- <div class="w3-container w3-half">
                     <button class="w3-button w3-round w3-border" type="submit" name="Submit" value="send_to_QASL">
                         Submit for QASL </button>
-                </div>
+                </div> -->
 
                 <div class="w3-panel w3-half">
-                    {% if sl_results and sl_results["passage"] == "" %}
+                    <h4><span class="w3-tag w3-blue-gray"> Sequence Labeling Model </span></h4>
+
+                    {% if results and results["passage"] == "" %}
                     <p> You should type in a passage before clicking the submit button ! </p>
 
-                    {% elif sl_results and sl_results["passage"] != "" %}
+                    {% elif results and results["passage"] != "" %}
                     <p><span class="w3-tag w3-blue-gray"> Input Passage </span></p>
-                    <p> {{ sl_results["passage"] }} </p>
+                    <p> {{ results["passage"] }} </p>
                     <br>
 
-                    <p><span class="w3-tag w3-blue-gray"> Tokenization Result </span></p>
-                    <p> {{ sl_results["passage_tokens"] }} </p>
+                    <p><span class="w3-tag w3-blue-gray"> Tokenization </span></p>
+                    <p> {{ results["passage_tokens"] }} </p>
                     <br>
 
-                    <p><span class="w3-tag w3-blue-gray"> Recognition from Sequence Labeling Model </span></p>
+                    <p><span class="w3-tag w3-blue-gray"> Recognition </span></p>
                     <table class="w3-table w3-bordered w3-centered w3-hoverable">
-                        {% if sl_results["answers"] %}
+                        {% if results["sl_answers"] %}
                         <tr class="w3-light-gray">
                             <th>Type</th>
                             <th>Entity</th>
                             <th>Start position</th>
                             <th>End position</th>
                         </tr>
-                        {% for ans in sl_results["answers"] %}
+                        {% for ans in results["sl_answers"] %}
                         <tr>
                             <td>{{ ans.type }}</td>
                             <td>{{ ans.text }}</td>
@@ -71,29 +97,30 @@
                 </div>
 
                 <div class="w3-panel w3-half">
-                    {% if qasl_results and qasl_results["passage"] == "" %}
+                    <h4><span class="w3-tag w3-blue-gray"> QA-based Sequence Labeling Model </span></h4>
+
+                    {% if results and results["passage"] == "" %}
                     <p> You should type in a passage before clicking the submit button ! </p>
 
-                    {% elif qasl_results and qasl_results["passage"] != "" %}
+                    {% elif results and results["passage"] != "" %}
                     <p><span class="w3-tag w3-blue-gray"> Input Passage </span></p>
-                    <p> {{ qasl_results["passage"] }} </p>
+                    <p> {{ results["passage"] }} </p>
                     <br>
 
-                    <p><span class="w3-tag w3-blue-gray"> Tokenization Result </span></p>
-                    <p> {{ qasl_results["passage_tokens"] }} </p>
+                    <p><span class="w3-tag w3-blue-gray"> Tokenization </span></p>
+                    <p> {{ results["passage_tokens"] }} </p>
                     <br>
 
-                    <p><span class="w3-tag w3-blue-gray"> Recognition from Question Answering Sequence Labeling
-                            Model</span></p>
+                    <p><span class="w3-tag w3-blue-gray"> Recognition </span></p>
                     <table class="w3-table w3-bordered w3-centered w3-hoverable">
-                        {% if qasl_results["answers"] %}
+                        {% if results["qasl_answers"] %}
                         <tr class="w3-light-gray">
                             <th>Type</th>
                             <th>Entity</th>
                             <th>Start position</th>
                             <th>End position</th>
                         </tr>
-                        {% for ans in qasl_results["answers"] %}
+                        {% for ans in results["qasl_answers"] %}
                         <tr>
                             <td>{{ ans.type }}</td>
                             <td>{{ ans.text }}</td>
