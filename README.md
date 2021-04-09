@@ -136,11 +136,10 @@ sl_model = BertSLModel.from_pretrained("allenyummy/chinese-bert-wwm-ehr-ner-sl")
 qasl_model = BertQASLModel.from_pretrained("allenyummy/chinese-bert-wwm-ehr-ner-qasl")
 ```
 
+![demo](https://user-images.githubusercontent.com/36063123/114145365-e4c8ec00-9948-11eb-920a-86f5aff462a0.gif)
 
 
-
-
-or you can use them as pretrained models to finetune your own downstream tasks where langugage is Chinese as well.
+Or you can use them as pretrained models to finetune your own downstream tasks where langugage is Chinese as well.
 ```
 from transformers import AutoConfig, AutoTokenizer, AutoModelForTokenClassification  
 
