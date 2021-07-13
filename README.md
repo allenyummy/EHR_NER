@@ -1,10 +1,22 @@
-# Nested Named Entity Recognition for Chinese Electrical Health Record with QA-based Sequence Labeling
-The Named Entity Recognition (NER) task consists of two subtasks: flat and nested NER, depending on whether overlapping named entities (NEs) are allowed. This study presents a novel QA-based sequence labeling (QASL) approach to naturally tackle both tasks on a Chinese medical dataset which is a collection of electronic health records (EHRs). This proposed QASL approach parallelly asks a corresponding natural language question for each specific named entity type, and then identifies those associated NEs of the same specified type with the BIO tagging scheme. The associated nested NEs are then formed by overlapping the results of various types. In comparison with those pure sequence-labeling (SL) approaches, since the given question includes significant prior knowledge about the specified entity type and the capability of extracting NEs with different types, the performance for nested NER task is thus improved, obtaining 90.70\% of F1-score. On the other hand, in comparison with the pure QA-based approach, our proposed approach retains the SL features, which could extract multiple NEs with the same types without knowing the exact number of NEs in the same passage in advance. Eventually, experiments on our Chinese EHR dataset demonstrate that QASL-based models greatly outperform the SL-based models by 6.12\% to 7.14\% of F1-score.
+# Nested Named Entity Recognition for Chinese Electronic Health Record with QA-based Sequence Labeling
+Named Entity Recognition (NER) task consists of two subtasks: flat and nested NER, depending on whether overlapping named entities (NEs) are allowed. This study presents a novel QA-based sequence labeling (QASL) approach to naturally tackle both tasks on a Chinese Electronic Health Records (CEHR) dataset. This proposed QASL approach parallelly asks a corresponding natural language question for each specific named entity type, and then identifies those associated NEs of the same specified type with the BIO tagging scheme. The associated nested NEs are then formed by overlapping the results of various types. In comparison with those pure sequence-labeling (SL) approaches, since the given question includes significant prior knowledge about the specified entity type and the capability of extracting NEs with different types, the performance for nested NER task is thus improved, obtaining 90.70% of F1-score. On the other hand, in comparison with the pure QA-based approach, our proposed approach retains the SL features, which could extract multiple NEs with the same types without knowing the exact number of NEs in the same passage in advance. Eventually, experiments on our CEHR dataset demonstrate that QASL-based models greatly outperform the SL-based models by 6.12% to 7.14% of F1-score.
+
 
 ![](https://github.com/allenyummy/EHR_NER/blob/8d6ce78a8ee212a903f717b6f7b2fd0d0f949e7c/demo/Fig.1%20Example%20(V1.2).png)
 
 ---
-## Virtual Environment
+
+## Demo
+I've not owned a virtual private server to deploy the service. Therefore, I made a GIF to demostrate the operation.
+You can try by yourself by typing the following command.
+```
+$ PYTHONPATH=./ python demo/app.py
+```
+
+![demo](https://user-images.githubusercontent.com/36063123/114145365-e4c8ec00-9948-11eb-920a-86f5aff462a0.gif)
+
+---
+## Prepare Virtual Environment
 + Local virtual conda environment
 
 You can build a local environment in your development environment.
@@ -39,6 +51,118 @@ There are plenty of pretrained model released by [huggingface](https://huggingfa
 + Query
 
 If treating NER as QASL, then it's an essential and important step to create queries. The principle to construct queris is that one Entity Type corresponds to one Query. [Li et al., (2019)](https://arxiv.org/pdf/1910.11476.pdf) conducted a series experiments on English OntoNote 5.0 with different kinds of queries (e.g., Keyword, Template, Wikipedia, Annotation Guildlines, ...). In my opinion, it's simple to use keywords as queries (i.e., the names of entity types).
+
+---
+## Data Dir Structure
+```
+data/
+  |-- label/
+  |     |-- label4qasl.txt
+  |     |-- label4sl.txt
+  |
+  |-- query/
+  |     |-- simqasl_query.json
+  |     |-- qasl_query.json
+  |
+  |-- split/
+  |     |-- train.json
+  |     |-- dev.json
+  |     |-- test.json
+
+```
+
++ label     
+
+label/        | label4qasl.txt | label4sl.txt
+--------------|:-----:|:-----:
+Format        | one line per sentence | one line per sentence
+Content       | B<br>I<br>O           | B-XXX<br>I-XXX<br>B-YYY<br>I-YYY<br>...<br>O
+When to use   | `make run_simqasl`    | `make run_sl`
+
++ query (only used for `make run_simqasl`)
+
+query/        | simqasl_query.json | qasl_query.json
+--------------|:-----:|:-----:
+Format        | one question per label (json) | one question per label (json)
+Content       | {"ADD": "入院日期",<br>"DCD": "出院日期",<br>...}          | {"ADD": "請找出病患的入院日期。",<br>"DCD": "請找出病患的出院日期。",<br>...}
+When to use   | `make run_simqasl`    | `make run_qasl` (Now not supported yet)
+
++ split/train.json  (Format of dev.json or test.json is same as train.json)
+```
+{
+    "version": "V3.0",
+    "time": "2021/01/12_13:09:18",
+    "data": [
+        {
+            "pid": 0,
+            "passage": "病患於西元2019年10月5日至本院入院急診，於10月7日出院。10月16日,10月21日至本院門診追蹤治療。",
+            "passage_tokens": ["病","患","於","西","元","2019","年","10","月","5","日","至","本","院","入","院","急","診",",","於","10","月","7","日","出","院","。","10","月","16","日",",","10","月","21","日","至","本","院","門","診","追","蹤","治","療","。"],
+            "flat_ne_answers": [
+                {
+                    "type": "ADD",
+                    "text": "西元2019年10月5日",
+                    "start_pos": 3,
+                    "end_pos": 10
+                },
+                {
+                    "type": "DCD",
+                    "text": "10月7日",
+                    "start_pos": 20,
+                    "end_pos": 23
+                },
+                {
+                    "type": "OPD",
+                    "text": "10月16日",
+                    "start_pos": 27,
+                    "end_pos": 30
+                },
+                {
+                    "type": "OPD",
+                    "text": "10月21日",
+                    "start_pos": 32,
+                    "end_pos": 35
+                }
+            ],
+            "nested_ne_answers": [
+                {
+                    "type": "ADD",
+                    "text": "西元2019年10月5日",
+                    "start_pos": 3,
+                    "end_pos": 10
+                },
+                {
+                    "type": "EMD",
+                    "text": "西元2019年10月5日",
+                    "start_pos": 3,
+                    "end_pos": 10
+                },
+                {
+                    "type": "DCD",
+                    "text": "10月7日",
+                    "start_pos": 20,
+                    "end_pos": 23
+                },
+                {
+                    "type": "OPD",
+                    "text": "10月16日",
+                    "start_pos": 27,
+                    "end_pos": 30
+                },
+                {
+                    "type": "OPD",
+                    "text": "10月21日",
+                    "start_pos": 32,
+                    "end_pos": 35
+                }
+            ]
+        },
+        {...},
+        {...},
+    ]
+}
+```
+
+
 
 ---
 ## Train on training set and Evaluate on each data set
@@ -145,15 +269,6 @@ tokenizer = AutoTokenizer.from_pretrained("allenyummy/chinese-bert-wwm-ehr-ner-q
 model = AutoModelForTokenClassification.from_pretrained("allenyummy/chinese-bert-wwm-ehr-ner-qasl") 
 
 ```
----
-## Demo
-I've not owned a virtual private server to deploy the service. Therefore, I made a GIF to demostrate the operation.
-You can try by yourself by typing the following command.
-```
-$ PYTHONPATH=./ python demo/app.py
-```
-
-![demo](https://user-images.githubusercontent.com/36063123/114145365-e4c8ec00-9948-11eb-920a-86f5aff462a0.gif)
 
 ---
 ## Test
@@ -168,7 +283,7 @@ $ make test_model_pred
 Coming Soon...
 ```
 @article{Nested Named Entity Recognition for Chinese Electronic Health Records with QA-based Sequence Labeling,
-  author={Yu-Lun Chiang, Chih-Hao Lin, Cheng-Lung Sung},
-  mail={chiangyulun0914@gmail.com, mr.chihhaolin@gmail.com, alan.sung@ctbcbank.com}
+  author={Yu-Lun Chiang, Chih-Hao Lin, Cheng-Lung Sung, Keh-Yih Su},
+  mail={chiangyulun0914@gmail.com, mr.chihhaolin@gmail.com, alan.sung@ctbcbank.com, kysu@iis.sinica.edu.tw}
 }
 ```
