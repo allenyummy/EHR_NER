@@ -1,3 +1,20 @@
+.PHONY: clean
+
+help:
+	@echo "usage: make [argument]"
+	@echo " "
+	@echo "arguments:"
+	@echo "  test        :  conduct test functions"
+	@echo "  freeze      :  freeze packages and export to requirements.txt"
+	@echo "  build       :  build a docker image"
+	@echo "  run_sl      :  run EHR_NER as a sequence labeing (sl) task"
+	@echo "  run_simqasl :  run EHR_NER as a simple question answering (simqasl) task"
+	@echo "  demo        :  run a local demo"
+
+clean:
+	find . -name '.pytest_cache' -type d -exec rm -rf {} +
+	find . -name '__pycache__' -type d -exec rm -rf {} +
+
 test:
 	PYTHONPATH=./ pytest --log-cli-level=debug --cov=train/ --cov=utils/datasets/ --cov=configs/ --cov=tests/
 test_model_pred:
