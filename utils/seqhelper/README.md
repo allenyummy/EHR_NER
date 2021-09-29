@@ -44,7 +44,7 @@ PYTHONPATH=./ pytest --log-cli-level=warning --cov=./
 ## Citation
 ```
 @{seqhelper,
-  title={{seqhelper}: A Python framework for sequence labeling},
+  title={seqhelper: A Python framework for sequence labeling},
   url={https://github.com/allenyummy/seqhelper},
   note={Software available from https://github.com/allenyummy/seqhelper},
   author={Yu-Lun Chiang},
