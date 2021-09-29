@@ -1,14 +1,16 @@
-# Nested Named Entity Recognition for Chinese Electronic Health Record with QA-based Sequence Labeling
-Named Entity Recognition (NER) task consists of two subtasks: flat and nested NER, depending on whether overlapping named entities (NEs) are allowed. This study presents a novel QA-based sequence labeling (QASL) approach to naturally tackle both tasks on a Chinese Electronic Health Records (CEHR) dataset. This proposed QASL approach parallelly asks a corresponding natural language question for each specific named entity type, and then identifies those associated NEs of the same specified type with the BIO tagging scheme. The associated nested NEs are then formed by overlapping the results of various types. In comparison with those pure sequence-labeling (SL) approaches, since the given question includes significant prior knowledge about the specified entity type and the capability of extracting NEs with different types, the performance for nested NER task is thus improved, obtaining 90.70% of F1-score. On the other hand, in comparison with the pure QA-based approach, our proposed approach retains the SL features, which could extract multiple NEs with the same types without knowing the exact number of NEs in the same passage in advance. Eventually, experiments on our CEHR dataset demonstrate that QASL-based models greatly outperform the SL-based models by 6.12% to 7.14% of F1-score.
+# Nested Named Entity Recognition for Chinese Electronic Health Records with QA-based Sequence Labeling
+This study presents a novel QA-based sequence labeling (QASL) approach to naturally tackle both flat and nested Named Entity Recognition (NER) tasks on a Chinese Electronic Health Records (CEHRs) dataset. This proposed QASL approach parallelly asks a corresponding natural language question for each specific named entity type. It then identifies those associated NEs of the same specified type with the BIO tagging scheme. The associated nested NEs are then formed by overlapping the results of various types. Compared with those pure sequence-labeling (SL) approaches, since the given question includes significant prior knowledge about the specified entity type and the capability of extracting NEs with different types, the nested NER task is thus improved, obtaining 90.70% of F1-score. Besides, compared to the pure QA-based approach, our proposed approach retains the SL features, which could extract multiple NEs with the same types without knowing the exact number of NEs in the same passage in advance. Eventually, experiments on our CEHR dataset demonstrate that QASL-based models greatly outperform the SL-based models by 6.12% to 7.14% of F1-score.
 
+## Typical Chinese Electronic Health Records 
+![](https://github.com/allenyummy/EHR_NER/blob/master/fig/Fig.%201%20Example.pdf)
 
-![](https://github.com/allenyummy/EHR_NER/blob/8d6ce78a8ee212a903f717b6f7b2fd0d0f949e7c/demo/Fig.1%20Example%20(V1.2).png)
+## Framework of QA-based Sequence Labeling (QASL)
+![](https://github.com/allenyummy/EHR_NER/blob/master/fig/Fig.%202%20Overview.pdf)
 
 ---
 
 ## Demo
-I've not owned a virtual private server to deploy the service. Therefore, I made a GIF to demostrate the operation.
-You can try by yourself by typing the following command.
+I've not owned a virtual private server to deploy the service. Therefore, I made a GIF to demostrate the operation of SL and QASL models. You can try by yourself by typing the following command.
 ```
 $ PYTHONPATH=./ python demo/app.py
 ```
@@ -42,15 +44,15 @@ $ docker run --name ${container_name} -t -i --rm -v ${home}/EHR_NER/:/workspace 
 ## Materials for which you should prepare
 + Dataset
 
-You should prepare your own dataet since the datset is not going to be public. However, it doesn't mean that the idea shared by the repo is not helpful. Instead, you can use QASL framework for the public nested ner corpus, which is also my next step.
+You should prepare your own dataet since the datset is not going to be public. However, it doesn't mean that the idea shared by the repo is not helpful. Instead, you can use QASL framework for the public nested ner corpus (ACE2004, ACE2005, GENIA, NNE).
 
 + Pretrained Model
 
-There are plenty of pretrained model released by [huggingface](https://huggingface.co/models). Please download a model depending on language, model sturcture, cased/uncased, ... etc. In my case, I use `hfl/chinese-bert-wwm` as the pretrained model.
+There are plenty of pretrained models released by [huggingface](https://huggingface.co/models). Please download a model depending on language, model sturcture, cased/uncased, ... etc. In my case, I use `hfl/chinese-bert-wwm` as my backbone pretrained model.
 
 + Query
 
-If treating NER as QASL, then it's an essential and important step to create queries. The principle to construct queris is that one Entity Type corresponds to one Query. [Li et al., (2019)](https://arxiv.org/pdf/1910.11476.pdf) conducted a series experiments on English OntoNote 5.0 with different kinds of queries (e.g., Keyword, Template, Wikipedia, Annotation Guildlines, ...). In my opinion, it's simple to use keywords as queries (i.e., the names of entity types).
+If treating NER as QASL, then it's an essential and important step to create queries. The principle to construct queris is that one Entity Type corresponds to one Query. [Li et al., (2020)](https://arxiv.org/pdf/1910.11476.pdf) conducted a series experiments on English OntoNote 5.0 with different kinds of queries (e.g., Keyword, Template, Wikipedia, Annotation Guildlines, ...). In my opinion, it's simple to use keywords as queries (i.e., the names of entity types).
 
 ---
 ## Data Dir Structure
@@ -280,10 +282,10 @@ $ make test_model_pred
 
 ---
 ## Citation
-Coming Soon...
+It has been accepted by ROCLING 2021. The paper will be published soon.
 ```
 @article{Nested Named Entity Recognition for Chinese Electronic Health Records with QA-based Sequence Labeling,
-  author={Yu-Lun Chiang, Chih-Hao Lin, Cheng-Lung Sung, Keh-Yih Su},
+  author={Yu-Lun Chiang, Chih-Hao Lin, Cheng-Lung Sung, and Keh-Yih Su},
   mail={chiangyulun0914@gmail.com, mr.chihhaolin@gmail.com, alan.sung@ctbcbank.com, kysu@iis.sinica.edu.tw}
 }
 ```
