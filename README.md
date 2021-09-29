@@ -2,10 +2,10 @@
 This study presents a novel QA-based sequence labeling (QASL) approach to naturally tackle both flat and nested Named Entity Recognition (NER) tasks on a Chinese Electronic Health Records (CEHRs) dataset. This proposed QASL approach parallelly asks a corresponding natural language question for each specific named entity type. It then identifies those associated NEs of the same specified type with the BIO tagging scheme. The associated nested NEs are then formed by overlapping the results of various types. Compared with those pure sequence-labeling (SL) approaches, since the given question includes significant prior knowledge about the specified entity type and the capability of extracting NEs with different types, the nested NER task is thus improved, obtaining 90.70% of F1-score. Besides, compared to the pure QA-based approach, our proposed approach retains the SL features, which could extract multiple NEs with the same types without knowing the exact number of NEs in the same passage in advance. Eventually, experiments on our CEHR dataset demonstrate that QASL-based models greatly outperform the SL-based models by 6.12% to 7.14% of F1-score.
 
 ## Typical Chinese Electronic Health Records 
-![](https://github.com/allenyummy/EHR_NER/blob/master/fig/Fig.%201%20Example.pdf)
+![image](https://github.com/allenyummy/EHR_NER/blob/master/fig/Fig%201.%20Example.png)
 
 ## Framework of QA-based Sequence Labeling (QASL)
-![](https://github.com/allenyummy/EHR_NER/blob/master/fig/Fig.%202%20Overview.pdf)
+![image](https://github.com/allenyummy/EHR_NER/blob/master/fig/Fig%202.%20Overview.png)
 
 ---
 
