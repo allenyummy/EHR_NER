@@ -1,6 +1,8 @@
 # Nested Named Entity Recognition for Chinese Electronic Health Records with QA-based Sequence Labeling
 This study presents a novel QA-based sequence labeling (QASL) approach to naturally tackle both flat and nested Named Entity Recognition (NER) tasks on a Chinese Electronic Health Records (CEHRs) dataset. This proposed QASL approach parallelly asks a corresponding natural language question for each specific named entity type. It then identifies those associated NEs of the same specified type with the BIO tagging scheme. The associated nested NEs are then formed by overlapping the results of various types. Compared with those pure sequence-labeling (SL) approaches, since the given question includes significant prior knowledge about the specified entity type and the capability of extracting NEs with different types, the nested NER task is thus improved, obtaining 90.70% of F1-score. Besides, compared to the pure QA-based approach, our proposed approach retains the SL features, which could extract multiple NEs with the same types without knowing the exact number of NEs in the same passage in advance. Eventually, experiments on our CEHR dataset demonstrate that QASL-based models greatly outperform the SL-based models by 6.12% to 7.14% of F1-score.
 
+You can check this paper [here](https://aclanthology.org/2021.rocling-1.3/).
+
 ## Typical Chinese Electronic Health Records 
 ![image](https://user-images.githubusercontent.com/36063123/135220330-f0d6cd3f-01e7-4131-ac9b-06a1f5b92ea2.png)
 
@@ -282,10 +284,19 @@ $ make test_model_pred
 
 ---
 ## Citation
-It has been accepted by ROCLING 2021. The paper will be published soon.
 ```
-@article{Nested Named Entity Recognition for Chinese Electronic Health Records with QA-based Sequence Labeling,
-  author={Yu-Lun Chiang, Chih-Hao Lin, Cheng-Lung Sung, and Keh-Yih Su},
-  mail={chiangyulun0914@gmail.com, mr.chihhaolin@gmail.com, alan.sung@ctbcbank.com, kysu@iis.sinica.edu.tw}
+@inproceedings{chiang-etal-2021-nested,
+    title = "Nested Named Entity Recognition for {C}hinese Electronic Health Records with {QA}-based Sequence Labeling",
+    author = "Chiang, Yu-Lun  and
+      Lin, Chih-Hao  and
+      Sung, Cheng-Lung  and
+      Su, Keh-Yih",
+    booktitle = "Proceedings of the 33rd Conference on Computational Linguistics and Speech Processing (ROCLING 2021)",
+    month = oct,
+    year = "2021",
+    address = "Taoyuan, Taiwan",
+    publisher = "The Association for Computational Linguistics and Chinese Language Processing (ACLCLP)",
+    url = "https://aclanthology.org/2021.rocling-1.3",
+    pages = "18--25",
 }
 ```
